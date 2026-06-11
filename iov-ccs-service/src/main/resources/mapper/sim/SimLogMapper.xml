@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.mapper.SimLogMapper">
+
+    <resultMap type="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.SimLogPo" id="SimLogPoResult">
+        <result property="id" column="id"/>
+        <result property="iccid" column="iccid"/>
+        <result property="simState" column="sim_state"/>
+        <result property="smsAbility" column="sms_ability"/>
+        <result property="dataAbility" column="data_ability"/>
+        <result property="voiceAbility" column="voice_ability"/>
+        <result property="description" column="description"/>
+        <result property="createTime" column="create_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="modifyTime" column="modify_time"/>
+        <result property="modifyBy" column="modify_by"/>
+        <result property="rowVersion" column="row_version"/>
+        <result property="rowValid" column="row_valid"/>
+    </resultMap>
+
+    <update id="deleteByIccid">
+        update tb_sim_log set row_valid = 0 where iccid = #{iccid} and row_valid = 1
+    </update>
+
+</mapper>
