@@ -43,7 +43,7 @@ class MptSimControllerTest {
         request.setIccid(VALID_ICCID);
         request.setImsi(VALID_IMSI);
         request.setMsisdn(VALID_MSISDN);
-        request.setMnoType("MANUAL");
+        request.setMnoType("UNKNOWN");
         return request;
     }
 
@@ -275,7 +275,7 @@ class MptSimControllerTest {
     // ========== PUT /api/mpt/simInfo/v1/{iccid} ==========
 
     @Test
-    @DisplayName("更新SIM - 路径与body一致且MANUAL来源更新成功")
+    @DisplayName("更新SIM - 路径与body一致且手动来源更新成功")
     void update_success() {
         var result = controller.update(VALID_ICCID, buildValidRequest());
 
@@ -296,9 +296,9 @@ class MptSimControllerTest {
     }
 
     @Test
-    @DisplayName("更新SIM - 非MANUAL来源返回失败")
+    @DisplayName("更新SIM - 非手动来源返回失败")
     void update_nonManualSource() {
-        doThrow(new ServiceException("仅MANUAL来源的SIM信息可更新"))
+        doThrow(new ServiceException("仅手动/同步来源的SIM信息可更新"))
                 .when(manualSimService).updateSimInfo(eq(VALID_ICCID), any());
 
         var result = controller.update(VALID_ICCID, buildValidRequest());

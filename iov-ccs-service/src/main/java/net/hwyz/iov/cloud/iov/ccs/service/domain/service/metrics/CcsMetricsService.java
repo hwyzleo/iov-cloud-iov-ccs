@@ -3,7 +3,7 @@ package net.hwyz.iov.cloud.iov.ccs.service.domain.service.metrics;
 /**
  * CCS指标服务接口
  * <p>
- * 采集CMCC/CUCC/MANUAL链路的关键指标
+ * 采集CMCC/CUCC/手动同步链路的关键指标
  *
  * @author hwyz_leo
  */
@@ -80,22 +80,22 @@ public interface CcsMetricsService {
      */
     void recordCuccStoreCount(int success, int duplicate, int failed);
 
-    // ==================== MANUAL指标 ====================
+    // ==================== 手动/同步指标 ====================
 
     /**
-     * 记录MANUAL保存成功
+     * 记录手动保存成功
      */
     void recordManualSaveSuccess();
 
     /**
-     * 记录MANUAL保存失败
+     * 记录手动保存失败
      *
      * @param reason 失败原因
      */
     void recordManualSaveFail(String reason);
 
     /**
-     * 记录MANUAL批量保存
+     * 记录手动批量保存
      *
      * @param totalCount  总数
      * @param failCount   失败数
@@ -103,7 +103,7 @@ public interface CcsMetricsService {
     void recordManualBatchSave(int totalCount, int failCount);
 
     /**
-     * 记录MANUAL同步数据
+     * 记录手动同步数据
      *
      * @param success 是否成功
      * @param count   数据条数

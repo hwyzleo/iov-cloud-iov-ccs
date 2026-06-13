@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.hwyz.iov.cloud.iov.ccs.api.vo.enums.MnoType;
+import net.hwyz.iov.cloud.iov.ccs.api.vo.enums.SourceType;
 import net.hwyz.iov.cloud.iov.ccs.service.application.service.exception.BatchSaveException;
 import net.hwyz.iov.cloud.iov.ccs.service.application.service.exception.ServiceException;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.SimInfo;
@@ -49,7 +50,7 @@ public class ManualSimServiceImpl implements ManualSimService {
         normalizedSim.setVoiceStatus(true);
 
         // 设置来源
-        normalizedSim.setSourceMno(MnoType.MANUAL.getCode());
+        normalizedSim.setSourceMno(MnoType.UNKNOWN.getCode());
         if (normalizedSim.getSourceType() == null) {
             normalizedSim.setSourceType("manual_save");
         }
@@ -121,7 +122,7 @@ public class ManualSimServiceImpl implements ManualSimService {
                         .iccid(iccid)
                         .imsi(imsi)
                         .msisdn(msisdn)
-                        .sourceMno(MnoType.MANUAL.getCode())
+                        .sourceMno(MnoType.UNKNOWN.getCode())
                         .sourceType("sync_data")
                         .build();
 
@@ -176,9 +177,12 @@ public class ManualSimServiceImpl implements ManualSimService {
             throw new ServiceException("SIM信息不存在: " + iccid);
         }
 
-        // 仅MANUAL来源可更新
-        if (!MnoType.MANUAL.getCode().equals(existing.getSourceMno())) {
-            throw new ServiceException("仅MANUAL来源的SIM信息可更新");
+        // 仅手动/同步来源可更新
+        String sourceType = existing.getSourceType();
+        if (sourceType == null || (!sourceType.equals(SourceType.MANUAL_SAVE.getCode())
+                && !sourceType.equals(SourceType.MANUAL_BATCH.getCode())
+                && !sourceType.equals(SourceType.SYNC_DATA.getCode()))) {
+            throw new ServiceException("仅手动/同步来源的SIM信息可更新");
         }
 
         // 更新允许的字段

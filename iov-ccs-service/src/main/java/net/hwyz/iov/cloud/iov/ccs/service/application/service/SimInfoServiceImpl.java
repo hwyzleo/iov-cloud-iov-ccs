@@ -62,7 +62,7 @@ public class SimInfoServiceImpl implements SimInfoService {
                         // 检查数据差异
                         checkDataDifference(existingSim, simInfo);
                     } else {
-                        // MANUAL等其他来源：按业务逻辑处理
+                        // 手动/同步等其他来源：按业务逻辑处理
                         duplicateCount++;
                     }
                 } else {

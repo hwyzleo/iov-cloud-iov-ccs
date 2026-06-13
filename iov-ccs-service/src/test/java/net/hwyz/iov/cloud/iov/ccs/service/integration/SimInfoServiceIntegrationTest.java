@@ -34,7 +34,7 @@ class SimInfoServiceIntegrationTest extends BaseTest {
                 .iccid(iccid)
                 .imsi("460001234567890")
                 .msisdn("8613800138000")
-                .sourceMno("MANUAL")
+                .sourceMno("UNKNOWN")
                 .sourceType("integration_test")
                 .simStatus(1)
                 .bindingStatus(0)
@@ -61,7 +61,7 @@ class SimInfoServiceIntegrationTest extends BaseTest {
         assertTrue(saved.getSmsStatus());
         assertTrue(saved.getDataStatus());
         assertTrue(saved.getVoiceStatus());
-        assertEquals("MANUAL", saved.getSourceMno());
+        assertEquals("UNKNOWN", saved.getSourceMno());
         assertNotNull(saved.getSourceType());
     }
 
@@ -99,7 +99,7 @@ class SimInfoServiceIntegrationTest extends BaseTest {
         SimInfo saved = simInfoRepository.getByIccid("99980000000000000005");
         assertNotNull(saved);
         assertEquals(1, saved.getSimStatus());
-        assertEquals("MANUAL", saved.getSourceMno());
+        assertEquals("UNKNOWN", saved.getSourceMno());
         assertEquals("sync_data", saved.getSourceType());
     }
 

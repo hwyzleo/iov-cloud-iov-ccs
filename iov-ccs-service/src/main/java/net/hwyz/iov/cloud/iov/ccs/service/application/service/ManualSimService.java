@@ -61,11 +61,11 @@ public interface ManualSimService {
     SimInfo getSimInfo(String iccid);
 
     /**
-     * 更新SIM信息（仅MANUAL来源可更新）
+     * 更新SIM信息（仅手动/同步来源可更新）
      *
      * @param iccid   ICCID
      * @param simInfo 待更新的SIM信息
-     * @throws net.hwyz.iov.cloud.iov.ccs.service.application.service.exception.ServiceException 不存在或非MANUAL来源时抛出
+     * @throws net.hwyz.iov.cloud.iov.ccs.service.application.service.exception.ServiceException 不存在或非手动/同步来源时抛出
      */
     void updateSimInfo(String iccid, SimInfo simInfo);
 

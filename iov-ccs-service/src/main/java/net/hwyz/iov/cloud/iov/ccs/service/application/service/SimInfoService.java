@@ -15,7 +15,7 @@ public interface SimInfoService {
      * 处理SIM存储事件
      * <p>
      * 监听SimStorageEvent事件，遍历SIM列表，对每个ICCID检查是否已存在：
-     * - 已存在：按策略处理（CMCC/CUCC幂等跳过，MANUAL拒绝，sync-data更新）
+     * - 已存在：按策略处理（CMCC/CUCC幂等跳过，手动录入拒绝，sync-data更新）
      * - 不存在：插入tb_sim_info表
      *
      * @param event 存储事件

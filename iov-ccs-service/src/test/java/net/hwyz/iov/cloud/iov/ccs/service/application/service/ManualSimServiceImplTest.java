@@ -73,7 +73,7 @@ class ManualSimServiceImplTest {
                         && Boolean.TRUE.equals(saved.getSmsStatus())
                         && Boolean.TRUE.equals(saved.getDataStatus())
                         && Boolean.TRUE.equals(saved.getVoiceStatus())
-                        && "MANUAL".equals(saved.getSourceMno())
+                        && "UNKNOWN".equals(saved.getSourceMno())
                         && "manual_save".equals(saved.getSourceType())
         ));
     }
@@ -268,14 +268,15 @@ class ManualSimServiceImplTest {
     // ========== updateSimInfo ==========
 
     @Test
-    @DisplayName("更新SIM - MANUAL来源更新成功")
+    @DisplayName("更新SIM - 手动来源更新成功")
     void updateSimInfo_success() {
         SimInfo existing = SimInfo.builder()
                 .id(1L)
                 .iccid("89860123456789012345")
                 .imsi("460001234567890")
                 .msisdn("13800138000")
-                .sourceMno("MANUAL")
+                .sourceMno("UNKNOWN")
+                .sourceType("manual_save")
                 .simStatus(1)
                 .bindingStatus(0)
                 .realnameStatus(1)
@@ -310,12 +311,13 @@ class ManualSimServiceImplTest {
     }
 
     @Test
-    @DisplayName("更新SIM - 非MANUAL来源拒绝更新")
+    @DisplayName("更新SIM - 非手动/同步来源拒绝更新")
     void updateSimInfo_nonManualSource() {
         SimInfo existing = SimInfo.builder()
                 .id(1L)
                 .iccid("89860123456789012345")
                 .sourceMno("CMCC")
+                .sourceType("cmcc_file")
                 .build();
         when(simInfoRepository.getByIccid("89860123456789012345")).thenReturn(existing);
 
@@ -332,7 +334,7 @@ class ManualSimServiceImplTest {
         SimInfo existing = SimInfo.builder()
                 .id(1L)
                 .iccid("89860123456789012345")
-                .sourceMno("MANUAL")
+                .sourceMno("UNKNOWN")
                 .build();
         when(simInfoRepository.getByIccid("89860123456789012345")).thenReturn(existing);
 
@@ -355,8 +357,8 @@ class ManualSimServiceImplTest {
     @Test
     @DisplayName("批量删除 - 全部成功不抛异常")
     void batchDeleteSimInfo_allSuccess() {
-        SimInfo sim1 = SimInfo.builder().id(1L).iccid("89860123456789012341").sourceMno("MANUAL").build();
-        SimInfo sim2 = SimInfo.builder().id(2L).iccid("89860123456789012342").sourceMno("MANUAL").build();
+        SimInfo sim1 = SimInfo.builder().id(1L).iccid("89860123456789012341").sourceMno("UNKNOWN").build();
+        SimInfo sim2 = SimInfo.builder().id(2L).iccid("89860123456789012342").sourceMno("UNKNOWN").build();
         when(simInfoRepository.getByIccid("89860123456789012341")).thenReturn(sim1);
         when(simInfoRepository.getByIccid("89860123456789012342")).thenReturn(sim2);
 
@@ -369,7 +371,7 @@ class ManualSimServiceImplTest {
     @Test
     @DisplayName("批量删除 - 部分失败抛BatchSaveException")
     void batchDeleteSimInfo_partialFail() {
-        SimInfo sim1 = SimInfo.builder().id(1L).iccid("89860123456789012341").sourceMno("MANUAL").build();
+        SimInfo sim1 = SimInfo.builder().id(1L).iccid("89860123456789012341").sourceMno("UNKNOWN").build();
         when(simInfoRepository.getByIccid("89860123456789012341")).thenReturn(sim1);
         when(simInfoRepository.getByIccid("not_exist")).thenReturn(null);
 

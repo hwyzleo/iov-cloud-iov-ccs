@@ -28,7 +28,12 @@ public class SimInfoQueryRequest {
     private String msisdn;
 
     /**
-     * 来源运营商：CMCC/CUCC/MANUAL
+     * 来源运营商：CMCC/CUCC/UNKNOWN
      */
     private String sourceMno;
+
+    /**
+     * 来源类型：cmcc_file/cucc_push/manual_save/manual_batch/sync_data
+     */
+    private String sourceType;
 }

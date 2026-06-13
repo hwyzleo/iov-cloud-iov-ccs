@@ -59,7 +59,7 @@ class MptSimControllerIntegrationTest extends BaseTest {
         SimInfo sim = SimInfo.builder()
                 .id(1L).iccid("89860123456789012345")
                 .imsi("460001234567890").msisdn("8613800138000")
-                .sourceMno("MANUAL").build();
+                .sourceMno("UNKNOWN").build();
 
         when(manualSimService.listSimInfo(any())).thenReturn(List.of(sim));
 

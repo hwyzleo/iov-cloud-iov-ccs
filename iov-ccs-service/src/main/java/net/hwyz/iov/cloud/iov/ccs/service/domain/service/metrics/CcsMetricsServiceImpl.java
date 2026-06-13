@@ -132,57 +132,57 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
         log.debug("CUCC入库统计: success={}, duplicate={}, failed={}", success, duplicate, failed);
     }
 
-    // ==================== MANUAL指标 ====================
+    // ==================== 手动/同步指标 ====================
 
     @Override
     public void recordManualSaveSuccess() {
         Counter.builder("ccs.manual.save.success")
-                .description("MANUAL保存成功次数")
+                .description("手动保存成功次数")
                 .register(meterRegistry)
                 .increment();
-        log.debug("MANUAL保存成功");
+        log.debug("手动保存成功");
     }
 
     @Override
     public void recordManualSaveFail(String reason) {
         Counter.builder("ccs.manual.save.fail")
-                .description("MANUAL保存失败次数")
+                .description("手动保存失败次数")
                 .tag("reason", reason)
                 .register(meterRegistry)
                 .increment();
-        log.debug("MANUAL保存失败: reason={}", reason);
+        log.debug("手动保存失败: reason={}", reason);
     }
 
     @Override
     public void recordManualBatchSave(int totalCount, int failCount) {
         Counter.builder("ccs.manual.batch.save.total")
-                .description("MANUAL批量保存总数")
+                .description("手动批量保存总数")
                 .register(meterRegistry)
                 .increment(totalCount);
 
         Counter.builder("ccs.manual.batch.save.fail")
-                .description("MANUAL批量保存失败数")
+                .description("手动批量保存失败数")
                 .register(meterRegistry)
                 .increment(failCount);
 
-        log.debug("MANUAL批量保存: total={}, fail={}", totalCount, failCount);
+        log.debug("手动批量保存: total={}, fail={}", totalCount, failCount);
     }
 
     @Override
     public void recordManualSyncData(boolean success, int count) {
         Counter.builder("ccs.manual.sync.data")
-                .description("MANUAL同步数据次数")
+                .description("手动同步数据次数")
                 .tag("success", String.valueOf(success))
                 .register(meterRegistry)
                 .increment();
 
         if (success) {
             Counter.builder("ccs.manual.sync.data.count")
-                    .description("MANUAL同步数据条数")
+                    .description("手动同步数据条数")
                     .register(meterRegistry)
                     .increment(count);
         }
 
-        log.debug("MANUAL同步数据: success={}, count={}", success, count);
+        log.debug("手动同步数据: success={}, count={}", success, count);
     }
 }

@@ -34,7 +34,7 @@ import java.util.Map;
  *   POST   /sync                Hex编码数据同步（Upsert）
  *   GET    /list                分页条件查询
  *   GET    /{iccid}             查询详情
- *   PUT    /{iccid}             更新（仅MANUAL来源，路径与body iccid须一致）
+ *   PUT    /{iccid}             更新（仅手动/同步来源，路径与body iccid须一致）
  *   DELETE /{iccid}             删除单条
  *   DELETE /batch/{iccids}      批量删除
  * </pre>
@@ -52,7 +52,7 @@ public class MptSimController extends BaseController {
     /**
      * 分页条件查询SIM信息列表
      *
-     * @param query 筛选条件（iccid/imsi/msisdn/sourceMno，均可选）
+     * @param query 筛选条件（iccid/imsi/msisdn/sourceMno/sourceType，均可选）
      * @return 分页结果，包含列表和分页元数据
      */
     @RequiresPermissions("ccs:simInfo:list")
@@ -71,6 +71,9 @@ public class MptSimController extends BaseController {
         }
         if (query.getSourceMno() != null && !query.getSourceMno().isEmpty()) {
             params.put("sourceMno", query.getSourceMno());
+        }
+        if (query.getSourceType() != null && !query.getSourceType().isEmpty()) {
+            params.put("sourceType", query.getSourceType());
         }
 
         List<SimInfo> list = manualSimService.listSimInfo(params);
@@ -177,7 +180,7 @@ public class MptSimController extends BaseController {
     }
 
     /**
-     * 更新SIM信息（仅MANUAL来源可更新）
+     * 更新SIM信息（仅手动/同步来源可更新）
      * <p>
      * 路径iccid与请求体iccid必须一致，否则拒绝。
      * 运营商来源（CMCC/CUCC）记录不可更新。

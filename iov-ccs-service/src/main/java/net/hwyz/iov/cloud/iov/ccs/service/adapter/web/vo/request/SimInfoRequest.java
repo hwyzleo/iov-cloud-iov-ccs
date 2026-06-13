@@ -37,7 +37,7 @@ public class SimInfoRequest {
     private String msisdn;
 
     /**
-     * 运营商类型：CMCC/CUCC/MANUAL
+     * 运营商类型：CMCC/CUCC/UNKNOWN
      */
     @NotBlank(message = "运营商类型不能为空")
     private String mnoType;

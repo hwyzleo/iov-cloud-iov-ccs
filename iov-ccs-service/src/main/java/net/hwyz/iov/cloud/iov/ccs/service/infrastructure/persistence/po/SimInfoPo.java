@@ -39,7 +39,7 @@ public class SimInfoPo {
     private String msisdn;
 
     /**
-     * 来源运营商：CMCC/CUCC/MANUAL
+     * 来源运营商：CMCC/CUCC/UNKNOWN
      */
     private String sourceMno;
 

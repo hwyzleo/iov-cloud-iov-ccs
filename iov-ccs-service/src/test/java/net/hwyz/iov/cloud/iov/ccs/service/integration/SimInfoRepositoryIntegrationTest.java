@@ -19,7 +19,7 @@ class SimInfoRepositoryIntegrationTest extends BaseTest {
                 .iccid(iccid)
                 .imsi("460001234567890")
                 .msisdn("8613800138000")
-                .sourceMno("MANUAL")
+                .sourceMno("UNKNOWN")
                 .sourceType("integration_test")
                 .simStatus(1)
                 .bindingStatus(0)
@@ -43,7 +43,7 @@ class SimInfoRepositoryIntegrationTest extends BaseTest {
         assertEquals("99990000000000000001", found.getIccid());
         assertEquals("460001234567890", found.getImsi());
         assertEquals("8613800138000", found.getMsisdn());
-        assertEquals("MANUAL", found.getSourceMno());
+        assertEquals("UNKNOWN", found.getSourceMno());
         assertNotNull(found.getId());
         assertNotNull(found.getCreatedTime());
     }
@@ -88,7 +88,7 @@ class SimInfoRepositoryIntegrationTest extends BaseTest {
 
         SimInfo found = simInfoRepository.getByIccid("99990000000000000004");
         assertNotNull(found);
-        assertEquals("MANUAL", found.getSourceMno());
+        assertEquals("UNKNOWN", found.getSourceMno());
     }
 
     @Test

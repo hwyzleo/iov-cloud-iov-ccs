@@ -23,9 +23,9 @@ public enum MnoType {
     CUCC("CUCC", "中国联通"),
 
     /**
-     * 手动录入
+     * 未知
      */
-    MANUAL("MANUAL", "手动录入");
+    UNKNOWN("UNKNOWN", "未知");
 
     /**
      * 运营商代码
