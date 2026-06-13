@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.mapper.CmccFileRequestRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="baseResultMap" type="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.CmccFileRequestRecordPo">
+        <id column="id" property="id" />
+        <result column="file_id" property="fileId" />
+        <result column="request_start" property="requestStart" />
+        <result column="request_end" property="requestEnd" />
+        <result column="ts" property="ts" />
+        <result column="encrypted" property="encrypted" />
+        <result column="status" property="status" />
+        <result column="retry_count" property="retryCount" />
+        <result column="failure_stage" property="failureStage" />
+        <result column="failure_reason" property="failureReason" />
+        <result column="parsed_total" property="parsedTotal" />
+        <result column="stored_success" property="storedSuccess" />
+        <result column="stored_duplicate" property="storedDuplicate" />
+        <result column="stored_failed" property="storedFailed" />
+        <result column="created_time" property="createdTime" />
+        <result column="updated_time" property="updatedTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="baseColumnList">
+        id, file_id, request_start, request_end, ts, encrypted, status,
+        retry_count, failure_stage, failure_reason,
+        parsed_total, stored_success, stored_duplicate, stored_failed,
+        created_time, updated_time
+    </sql>
+
+    <!-- 插入 -->
+    <insert id="insertPo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_cmcc_file_request_record (
+            file_id, request_start, request_end, ts, encrypted, status,
+            retry_count, failure_stage, failure_reason,
+            parsed_total, stored_success, stored_duplicate, stored_failed
+        )
+        VALUES (
+            #{fileId}, #{requestStart}, #{requestEnd}, #{ts}, #{encrypted}, #{status},
+            #{retryCount}, #{failureStage}, #{failureReason},
+            #{parsedTotal}, #{storedSuccess}, #{storedDuplicate}, #{storedFailed}
+        )
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="batchInsertPo" useGeneratedKeys="true" keyProperty="id" parameterType="java.util.List">
+        INSERT INTO tb_cmcc_file_request_record (
+            file_id, request_start, request_end, ts, encrypted, status,
+            retry_count, failure_stage, failure_reason,
+            parsed_total, stored_success, stored_duplicate, stored_failed
+        )
+        VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+        (
+            #{item.fileId}, #{item.requestStart}, #{item.requestEnd}, #{item.ts}, #{item.encrypted}, #{item.status},
+            #{item.retryCount}, #{item.failureStage}, #{item.failureReason},
+            #{item.parsedTotal}, #{item.storedSuccess}, #{item.storedDuplicate}, #{item.storedFailed}
+        )
+        </foreach>
+    </insert>
+
+    <!-- 更新 -->
+    <update id="updatePo" parameterType="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.CmccFileRequestRecordPo">
+        UPDATE tb_cmcc_file_request_record t SET
+        <if test="status != null and status != ''">
+            t.status = #{status},
+        </if>
+        <if test="retryCount != null">
+            t.retry_count = #{retryCount},
+        </if>
+        <if test="failureStage != null and failureStage != ''">
+            t.failure_stage = #{failureStage},
+        </if>
+        <if test="failureReason != null and failureReason != ''">
+            t.failure_reason = #{failureReason},
+        </if>
+        <if test="parsedTotal != null">
+            t.parsed_total = #{parsedTotal},
+        </if>
+        <if test="storedSuccess != null">
+            t.stored_success = #{storedSuccess},
+        </if>
+        <if test="storedDuplicate != null">
+            t.stored_duplicate = #{storedDuplicate},
+        </if>
+        <if test="storedFailed != null">
+            t.stored_failed = #{storedFailed},
+        </if>
+        t.updated_time = now()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 逻辑删除 -->
+    <update id="logicalDeletePo" parameterType="Long">
+        UPDATE tb_cmcc_file_request_record t SET
+        t.updated_time = now()
+        WHERE t.id = #{value}
+    </update>
+
+    <!-- 物理删除 -->
+    <delete id="physicalDeletePo" parameterType="Long">
+        DELETE FROM tb_cmcc_file_request_record t
+        WHERE t.id = #{value}
+    </delete>
+
+    <!-- 根据主键获取对应数据 -->
+    <select id="selectPoById" parameterType="Long" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_cmcc_file_request_record t
+        WHERE t.id = #{value}
+    </select>
+
+    <!-- 根据数据对象获取对应数据列表 -->
+    <select id="selectPoByExample" parameterType="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.CmccFileRequestRecordPo" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_cmcc_file_request_record t
+        WHERE 1=1
+        <if test="id != null">
+            AND t.id = #{id}
+        </if>
+        <if test="fileId != null and fileId != ''">
+            AND t.file_id = #{fileId}
+        </if>
+        <if test="status != null and status != ''">
+            AND t.status = #{status}
+        </if>
+        <if test="failureStage != null and failureStage != ''">
+            AND t.failure_stage = #{failureStage}
+        </if>
+        ORDER BY t.id DESC
+    </select>
+
+    <!-- 根据Map对象获取对应数据列表 -->
+    <select id="selectPoByMap" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_cmcc_file_request_record t
+        WHERE 1=1
+        <!-- 添加自定义条件 -->
+        ORDER BY t.id DESC
+    </select>
+
+    <!-- 根据fileId查询记录 -->
+    <select id="selectByFileId" parameterType="String" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_cmcc_file_request_record t
+        WHERE t.file_id = #{fileId}
+        LIMIT 1
+    </select>
+
+    <!-- 根据fileId判断是否存在 -->
+    <select id="existsByFileId" parameterType="String" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM tb_cmcc_file_request_record t
+        WHERE t.file_id = #{fileId}
+    </select>
+
+    <!-- 根据Map对象统计记录数 -->
+    <select id="countPoByMap" parameterType="java.util.Map" resultType="int">
+        SELECT COUNT(*)
+        FROM tb_cmcc_file_request_record t
+        WHERE 1=1
+        <!-- 添加自定义条件 -->
+    </select>
+</mapper>
