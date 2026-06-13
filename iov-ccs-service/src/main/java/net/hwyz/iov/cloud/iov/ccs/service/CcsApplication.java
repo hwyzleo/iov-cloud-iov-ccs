@@ -7,6 +7,8 @@ import net.hwyz.iov.cloud.framework.security.annotation.EnableCustomFeignClients
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 启动类
@@ -17,6 +19,8 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @EnableCustomConfig
 @EnableDiscoveryClient
 @EnableCustomFeignClients
+@EnableAsync
+@EnableScheduling
 @SpringBootApplication
 public class CcsApplication {
 
