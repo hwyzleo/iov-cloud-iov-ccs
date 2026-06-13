@@ -1,15 +1,13 @@
-package net.hwyz.iov.cloud.iov.ccs.service.adapter.web.controller;
+package net.hwyz.iov.cloud.iov.ccs.service.adapter.web.controller.open;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.hwyz.iov.cloud.framework.common.bean.ApiResponse;
 import net.hwyz.iov.cloud.iov.ccs.service.application.cmcc.CmccFileService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 /**
- * CMCC回调接口
+ * CMCC回调接口（开放平台）
  * <p>
  * 接收中国移动的文件就绪回调通知
  *
@@ -17,9 +15,9 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/service/cmcc/callback")
 @RequiredArgsConstructor
-public class CmccCallbackController {
+@RequestMapping("/api/open/cmcc/callback")
+public class OpenCmccCallbackController {
 
     private final CmccFileService cmccFileService;
 
@@ -34,27 +32,19 @@ public class CmccCallbackController {
      * @return 响应
      */
     @PostMapping("/file/notify")
-    public ResponseEntity<Map<String, Object>> fileNotify(
+    public ApiResponse<Void> fileNotify(
             @RequestParam("fileId") String fileId,
             @RequestParam("successful") boolean successful,
             @RequestParam(value = "message", required = false) String message) {
 
-        logger.info("收到CMCC文件通知: fileId={}, successful={}, message={}", fileId, successful, message);
+        log.info("收到CMCC文件通知: fileId={}, successful={}, message={}", fileId, successful, message);
 
         try {
             cmccFileService.handleCallback(fileId, successful, message);
-            return ResponseEntity.ok(Map.of(
-                    "code", 200,
-                    "success", true,
-                    "msg", "处理成功"
-            ));
+            return ApiResponse.ok();
         } catch (Exception e) {
-            logger.error("处理CMCC回调失败: fileId={}", fileId, e);
-            return ResponseEntity.ok(Map.of(
-                    "code", 500,
-                    "success", false,
-                    "msg", "处理失败: " + e.getMessage()
-            ));
+            log.error("处理CMCC回调失败: fileId={}", fileId, e);
+            return ApiResponse.fail("处理失败: " + e.getMessage());
         }
     }
 }

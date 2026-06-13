@@ -1,20 +1,18 @@
-package net.hwyz.iov.cloud.iov.ccs.service.adapter.web.controller;
+package net.hwyz.iov.cloud.iov.ccs.service.adapter.web.controller.open;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.hwyz.iov.cloud.framework.common.bean.ApiResponse;
 import net.hwyz.iov.cloud.iov.ccs.service.application.cucc.CuccSecurityService;
 import net.hwyz.iov.cloud.iov.ccs.service.application.cucc.CuccSimService;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.SimInfo;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
- * CUCC回调接口
+ * CUCC回调接口（开放平台）
  * <p>
  * 接收中国联通的SIM信息推送
  *
@@ -22,9 +20,9 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/service/cucc/callback")
 @RequiredArgsConstructor
-public class CuccCallbackController {
+@RequestMapping("/api/open/cucc/callback")
+public class OpenCuccCallbackController {
 
     private final CuccSecurityService securityService;
     private final CuccSimService simService;
@@ -38,8 +36,8 @@ public class CuccCallbackController {
      * @return 响应
      */
     @PostMapping("/notify/simInfo")
-    public ResponseEntity<Map<String, Object>> notifySimInfo(@RequestBody CuccSimInfoRequest request) {
-        logger.info("收到CUCC SIM信息推送: appid={}, batchNo={}, dataCount={}",
+    public ApiResponse<Void> notifySimInfo(@RequestBody CuccSimInfoRequest request) {
+        log.info("收到CUCC SIM信息推送: appid={}, batchNo={}, dataCount={}",
                 request.getAppid(), request.getBatchNo(),
                 request.getData() != null ? request.getData().size() : 0);
 
@@ -47,32 +45,20 @@ public class CuccCallbackController {
         String body = toJsonString(request);
         if (!securityService.verifySignature(request.getAppid(), request.getTimestamp(),
                 request.getNonce(), request.getSignature(), body)) {
-            logger.warn("CUCC签名验证失败: appid={}", request.getAppid());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
-                    "code", 401,
-                    "success", false,
-                    "msg", "签名验证失败"
-            ));
+            log.warn("CUCC签名验证失败: appid={}", request.getAppid());
+            return ApiResponse.fail(401, "签名验证失败");
         }
 
         // Step 2: 防重放检查
         if (securityService.isReplayAttack(request.getTimestamp(), request.getNonce())) {
-            logger.warn("CUCC重放攻击检测: appid={}, nonce={}", request.getAppid(), request.getNonce());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
-                    "code", 403,
-                    "success", false,
-                    "msg", "重放攻击检测"
-            ));
+            log.warn("CUCC重放攻击检测: appid={}, nonce={}", request.getAppid(), request.getNonce());
+            return ApiResponse.fail(403, "重放攻击检测");
         }
 
         // Step 3: data为空直接返回成功
         if (request.getData() == null || request.getData().isEmpty()) {
-            logger.info("CUCC推送数据为空，直接返回成功");
-            return ResponseEntity.ok(Map.of(
-                    "code", 200,
-                    "success", true,
-                    "msg", "数据为空，无需处理"
-            ));
+            log.info("CUCC推送数据为空，直接返回成功");
+            return ApiResponse.ok();
         }
 
         // Step 4: 转换为SimInfo列表
@@ -85,18 +71,9 @@ public class CuccCallbackController {
 
         // Step 6: 返回结果
         if (result.success()) {
-            return ResponseEntity.ok(Map.of(
-                    "code", 200,
-                    "success", true,
-                    "msg", result.message()
-            ));
+            return ApiResponse.ok();
         } else {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                    "code", 409,
-                    "success", false,
-                    "msg", result.message(),
-                    "failedIccids", result.failedIccids()
-            ));
+            return ApiResponse.fail(409, "部分失败，失败ICCID: " + String.join(", ", result.failedIccids()));
         }
     }
 
