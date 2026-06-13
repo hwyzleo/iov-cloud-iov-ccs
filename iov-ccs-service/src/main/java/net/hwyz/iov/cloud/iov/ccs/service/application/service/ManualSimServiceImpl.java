@@ -147,4 +147,81 @@ public class ManualSimServiceImpl implements ManualSimService {
             throw new ServiceException("Hex解码或JSON解析失败: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SimInfo> listSimInfo(Map<String, Object> params) {
+        log.debug("条件查询SIM信息: params={}", params);
+        return simInfoRepository.listByCondition(params);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SimInfo getSimInfo(String iccid) {
+        log.debug("查询SIM信息详情: iccid={}", iccid);
+        SimInfo simInfo = simInfoRepository.getByIccid(iccid);
+        if (simInfo == null) {
+            throw new ServiceException("SIM信息不存在: " + iccid);
+        }
+        return simInfo;
+    }
+
+    @Override
+    @Transactional
+    public void updateSimInfo(String iccid, SimInfo simInfo) {
+        log.info("更新SIM信息: iccid={}", iccid);
+
+        SimInfo existing = simInfoRepository.getByIccid(iccid);
+        if (existing == null) {
+            throw new ServiceException("SIM信息不存在: " + iccid);
+        }
+
+        // 仅MANUAL来源可更新
+        if (!MnoType.MANUAL.getCode().equals(existing.getSourceMno())) {
+            throw new ServiceException("仅MANUAL来源的SIM信息可更新");
+        }
+
+        // 更新允许的字段
+        if (simInfo.getImsi() != null) {
+            existing.setImsi(simInfo.getImsi());
+        }
+        if (simInfo.getMsisdn() != null) {
+            existing.setMsisdn(simInfo.getMsisdn());
+        }
+        if (simInfo.getSimStatus() != null) {
+            existing.setSimStatus(simInfo.getSimStatus());
+        }
+        if (simInfo.getBindingStatus() != null) {
+            existing.setBindingStatus(simInfo.getBindingStatus());
+        }
+        if (simInfo.getRealnameStatus() != null) {
+            existing.setRealnameStatus(simInfo.getRealnameStatus());
+        }
+        if (simInfo.getSmsStatus() != null) {
+            existing.setSmsStatus(simInfo.getSmsStatus());
+        }
+        if (simInfo.getDataStatus() != null) {
+            existing.setDataStatus(simInfo.getDataStatus());
+        }
+        if (simInfo.getVoiceStatus() != null) {
+            existing.setVoiceStatus(simInfo.getVoiceStatus());
+        }
+
+        simInfoRepository.update(existing);
+        log.info("SIM信息更新成功: iccid={}", iccid);
+    }
+
+    @Override
+    @Transactional
+    public void deleteSimInfo(String iccid) {
+        log.info("删除SIM信息: iccid={}", iccid);
+
+        SimInfo existing = simInfoRepository.getByIccid(iccid);
+        if (existing == null) {
+            throw new ServiceException("SIM信息不存在: " + iccid);
+        }
+
+        simInfoRepository.deleteById(existing.getId());
+        log.info("SIM信息删除成功: iccid={}, sourceMno={}", iccid, existing.getSourceMno());
+    }
 }

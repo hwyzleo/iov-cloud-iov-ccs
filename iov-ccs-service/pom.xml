@@ -34,6 +34,12 @@
             <groupId>net.hwyz.iov.cloud.framework</groupId>
             <artifactId>framework-kafka-starter</artifactId>
         </dependency>
+
+        <!-- 框架: Redis -->
+        <dependency>
+            <groupId>net.hwyz.iov.cloud.framework</groupId>
+            <artifactId>framework-redis-starter</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

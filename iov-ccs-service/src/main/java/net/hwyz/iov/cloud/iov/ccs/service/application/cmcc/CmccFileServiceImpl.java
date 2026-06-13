@@ -237,7 +237,7 @@ public class CmccFileServiceImpl implements CmccFileService {
             startDate = endDate.minusMonths(DEFAULT_MONTHS_RANGE);
         } else if (CmccRequestStatus.STORED.getCode().equals(lastRecord.getStatus())) {
             // 上次成功：从上次结束日期的下一天开始
-            startDate = lastRecord.getRequestEnd().plusDays(1);
+            startDate = lastRecord.getRequestEnd().toLocalDate().plusDays(1).atStartOfDay();
         } else {
             // 上次失败：重试相同的日期范围
             startDate = lastRecord.getRequestStart();

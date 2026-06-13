@@ -177,6 +177,38 @@
         WHERE t.iccid = #{iccid}
     </select>
 
+    <!-- 条件查询列表（支持分页） -->
+    <select id="selectByCondition" parameterType="java.util.Map" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_sim_info t
+        WHERE 1=1
+        <if test="iccid != null and iccid != ''">
+            AND t.iccid = #{iccid}
+        </if>
+        <if test="imsi != null and imsi != ''">
+            AND t.imsi = #{imsi}
+        </if>
+        <if test="msisdn != null and msisdn != ''">
+            AND t.msisdn = #{msisdn}
+        </if>
+        <if test="sourceMno != null and sourceMno != ''">
+            AND t.source_mno = #{sourceMno}
+        </if>
+        <if test="sourceType != null and sourceType != ''">
+            AND t.source_type = #{sourceType}
+        </if>
+        <if test="simStatus != null">
+            AND t.sim_status = #{simStatus}
+        </if>
+        <if test="bindingStatus != null">
+            AND t.binding_status = #{bindingStatus}
+        </if>
+        <if test="realnameStatus != null">
+            AND t.realname_status = #{realnameStatus}
+        </if>
+        ORDER BY t.id DESC
+    </select>
+
     <!-- 根据Map对象统计记录数 -->
     <select id="countPoByMap" parameterType="java.util.Map" resultType="int">
         SELECT COUNT(*)

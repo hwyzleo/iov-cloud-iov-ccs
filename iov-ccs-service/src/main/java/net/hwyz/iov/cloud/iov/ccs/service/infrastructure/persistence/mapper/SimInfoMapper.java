@@ -4,6 +4,9 @@ import net.hwyz.iov.cloud.framework.mysql.dao.BaseDao;
 import net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.SimInfoPo;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * SIM基础信息表 DAO
  *
@@ -27,4 +30,12 @@ public interface SimInfoMapper extends BaseDao<SimInfoPo, Long> {
      * @return 是否存在
      */
     boolean existsByIccid(String iccid);
+
+    /**
+     * 条件查询列表（支持分页）
+     *
+     * @param params 查询条件
+     * @return SIM信息列表
+     */
+    List<SimInfoPo> selectByCondition(Map<String, Object> params);
 }

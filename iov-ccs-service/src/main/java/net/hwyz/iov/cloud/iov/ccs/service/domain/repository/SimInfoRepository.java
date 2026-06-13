@@ -2,6 +2,9 @@ package net.hwyz.iov.cloud.iov.ccs.service.domain.repository;
 
 import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.SimInfo;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * SIM信息仓储接口
  *
@@ -49,4 +52,20 @@ public interface SimInfoRepository {
      * @param simInfo SIM信息
      */
     void upsertSimInfo(SimInfo simInfo);
+
+    /**
+     * 条件查询列表（支持分页）
+     *
+     * @param params 查询条件
+     * @return SIM信息列表
+     */
+    List<SimInfo> listByCondition(Map<String, Object> params);
+
+    /**
+     * 根据ID删除SIM信息（物理删除）
+     *
+     * @param id 主键ID
+     * @return 影响行数
+     */
+    int deleteById(Long id);
 }

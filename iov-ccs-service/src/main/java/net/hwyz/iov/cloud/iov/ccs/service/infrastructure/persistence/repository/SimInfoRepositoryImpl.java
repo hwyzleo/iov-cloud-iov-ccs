@@ -7,6 +7,10 @@ import net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.mapper.SimI
 import net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.SimInfoPo;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 /**
  * SIM信息仓储实现
  *
@@ -58,6 +62,19 @@ public class SimInfoRepositoryImpl implements SimInfoRepository {
             SimInfoPo po = convertToPo(simInfo);
             simInfoMapper.insertPo(po);
         }
+    }
+
+    @Override
+    public List<SimInfo> listByCondition(Map<String, Object> params) {
+        List<SimInfoPo> poList = simInfoMapper.selectByCondition(params);
+        return poList.stream()
+                .map(this::convertToEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public int deleteById(Long id) {
+        return simInfoMapper.physicalDeletePo(id);
     }
 
     /**
