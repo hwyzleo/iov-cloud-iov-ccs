@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -215,5 +216,137 @@ class ManualSimServiceImplTest {
         manualSimService.syncData(hexData);
 
         verify(simInfoRepository, never()).upsertSimInfo(any());
+    }
+
+    // ========== listSimInfo ==========
+
+    @Test
+    @DisplayName("列表查询 - 委托Repository条件查询")
+    void listSimInfo_success() {
+        Map<String, Object> params = Map.of("iccid", "8986");
+        SimInfo sim = buildNormalizedSim("89860123456789012345");
+        when(simInfoRepository.listByCondition(params)).thenReturn(List.of(sim));
+
+        List<SimInfo> result = manualSimService.listSimInfo(params);
+
+        assertEquals(1, result.size());
+        verify(simInfoRepository).listByCondition(params);
+    }
+
+    @Test
+    @DisplayName("列表查询 - 空条件返回全部")
+    void listSimInfo_emptyParams() {
+        when(simInfoRepository.listByCondition(Map.of())).thenReturn(List.of());
+
+        List<SimInfo> result = manualSimService.listSimInfo(Map.of());
+
+        assertTrue(result.isEmpty());
+    }
+
+    // ========== getSimInfo ==========
+
+    @Test
+    @DisplayName("详情查询 - ICCID存在返回SIM信息")
+    void getSimInfo_success() {
+        SimInfo sim = buildNormalizedSim("89860123456789012345");
+        when(simInfoRepository.getByIccid("89860123456789012345")).thenReturn(sim);
+
+        SimInfo result = manualSimService.getSimInfo("89860123456789012345");
+
+        assertNotNull(result);
+        assertEquals("89860123456789012345", result.getIccid());
+    }
+
+    @Test
+    @DisplayName("详情查询 - ICCID不存在抛异常")
+    void getSimInfo_notFound() {
+        when(simInfoRepository.getByIccid("not_exist")).thenReturn(null);
+
+        assertThrows(ServiceException.class, () -> manualSimService.getSimInfo("not_exist"));
+    }
+
+    // ========== updateSimInfo ==========
+
+    @Test
+    @DisplayName("更新SIM - MANUAL来源更新成功")
+    void updateSimInfo_success() {
+        SimInfo existing = SimInfo.builder()
+                .id(1L)
+                .iccid("89860123456789012345")
+                .imsi("460001234567890")
+                .msisdn("13800138000")
+                .sourceMno("MANUAL")
+                .simStatus(1)
+                .bindingStatus(0)
+                .realnameStatus(1)
+                .smsStatus(true)
+                .dataStatus(true)
+                .voiceStatus(true)
+                .build();
+        when(simInfoRepository.getByIccid("89860123456789012345")).thenReturn(existing);
+
+        SimInfo update = SimInfo.builder()
+                .imsi("460009876543210")
+                .msisdn("13900139000")
+                .build();
+
+        manualSimService.updateSimInfo("89860123456789012345", update);
+
+        verify(simInfoRepository).update(argThat(updated ->
+                "460009876543210".equals(updated.getImsi())
+                        && "13900139000".equals(updated.getMsisdn())
+                        && "89860123456789012345".equals(updated.getIccid())
+        ));
+    }
+
+    @Test
+    @DisplayName("更新SIM - 不存在抛异常")
+    void updateSimInfo_notFound() {
+        when(simInfoRepository.getByIccid("not_exist")).thenReturn(null);
+
+        assertThrows(ServiceException.class,
+                () -> manualSimService.updateSimInfo("not_exist", SimInfo.builder().build()));
+        verify(simInfoRepository, never()).update(any());
+    }
+
+    @Test
+    @DisplayName("更新SIM - 非MANUAL来源拒绝更新")
+    void updateSimInfo_nonManualSource() {
+        SimInfo existing = SimInfo.builder()
+                .id(1L)
+                .iccid("89860123456789012345")
+                .sourceMno("CMCC")
+                .build();
+        when(simInfoRepository.getByIccid("89860123456789012345")).thenReturn(existing);
+
+        assertThrows(ServiceException.class,
+                () -> manualSimService.updateSimInfo("89860123456789012345", SimInfo.builder().build()));
+        verify(simInfoRepository, never()).update(any());
+    }
+
+    // ========== deleteSimInfo ==========
+
+    @Test
+    @DisplayName("删除SIM - 存在则物理删除")
+    void deleteSimInfo_success() {
+        SimInfo existing = SimInfo.builder()
+                .id(1L)
+                .iccid("89860123456789012345")
+                .sourceMno("MANUAL")
+                .build();
+        when(simInfoRepository.getByIccid("89860123456789012345")).thenReturn(existing);
+
+        manualSimService.deleteSimInfo("89860123456789012345");
+
+        verify(simInfoRepository).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("删除SIM - 不存在抛异常")
+    void deleteSimInfo_notFound() {
+        when(simInfoRepository.getByIccid("not_exist")).thenReturn(null);
+
+        assertThrows(ServiceException.class, () -> manualSimService.deleteSimInfo("not_exist"));
+        verify(simInfoRepository, never()).deleteById(any());
     }
 }
