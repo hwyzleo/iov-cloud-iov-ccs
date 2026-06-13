@@ -197,11 +197,9 @@ class MptSimControllerTest {
     @DisplayName("更新SIM - 不存在返回失败")
     void update_notFound() {
         doThrow(new ServiceException("SIM信息不存在"))
-                .when(manualSimService).updateSimInfo(eq("not_exist"), any());
+                .when(manualSimService).updateSimInfo(eq(VALID_ICCID), any());
 
-        SimInfoRequest request = buildValidRequest();
-        request.setIccid("not_exist");
-        var result = controller.update("not_exist", request);
+        var result = controller.update(VALID_ICCID, buildValidRequest());
 
         assertNotNull(result);
     }

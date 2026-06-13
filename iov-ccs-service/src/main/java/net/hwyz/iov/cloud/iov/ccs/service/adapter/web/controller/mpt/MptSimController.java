@@ -25,19 +25,19 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * SIM卡信息管理接口
- * <p>
- * 后台管理接口，用于手动录入和管理SIM卡信息。
- * <ul>
- *   <li>POST   /                    - 保存单条SIM信息</li>
- *   <li>POST   /batch               - 批量保存SIM信息</li>
- *   <li>POST   /sync                - Hex编码数据同步（Upsert）</li>
- *   <li>GET    /list                 - 分页条件查询</li>
- *   <li>GET    /{iccid}              - 查询详情</li>
- *   <li>PUT    /{iccid}              - 更新（仅MANUAL来源）</li>
- *   <li>DELETE /{iccid}              - 删除单条</li>
- *   <li>DELETE /batch/{iccids}       - 批量删除</li>
- * </ul>
+ * SIM卡信息管理接口（后台管理）
+ *
+ * <pre>
+ * 接口清单：
+ *   POST   /                    保存单条SIM信息
+ *   POST   /batch               批量保存SIM信息
+ *   POST   /sync                Hex编码数据同步（Upsert）
+ *   GET    /list                分页条件查询
+ *   GET    /{iccid}             查询详情
+ *   PUT    /{iccid}             更新（仅MANUAL来源，路径与body iccid须一致）
+ *   DELETE /{iccid}             删除单条
+ *   DELETE /batch/{iccids}      批量删除
+ * </pre>
  *
  * @author hwyz_leo
  */
@@ -50,10 +50,10 @@ public class MptSimController extends BaseController {
     private final ManualSimService manualSimService;
 
     /**
-     * 查询SIM信息列表（分页+筛选）
+     * 分页条件查询SIM信息列表
      *
-     * @param query 查询条件（iccid/imsi/msisdn/sourceMno）
-     * @return 分页结果
+     * @param query 筛选条件（iccid/imsi/msisdn/sourceMno，均可选）
+     * @return 分页结果，包含列表和分页元数据
      */
     @RequiresPermissions("ccs:simInfo:list")
     @GetMapping("/list")
@@ -78,10 +78,10 @@ public class MptSimController extends BaseController {
     }
 
     /**
-     * 查询SIM信息详情
+     * 查询单条SIM信息详情
      *
-     * @param iccid ICCID
-     * @return SIM信息
+     * @param iccid ICCID（集成电路卡识别码，19-20位数字）
+     * @return SIM信息，不存在时返回业务失败
      */
     @RequiresPermissions("ccs:simInfo:query")
     @GetMapping("/{iccid}")
@@ -97,9 +97,10 @@ public class MptSimController extends BaseController {
     /**
      * 保存单条SIM信息
      * <p>
-     * ICCID已存在时拒绝保存。入库前会执行格式校验和规范化。
+     * ICCID已存在时拒绝保存。入库前执行格式校验和规范化。
+     * 默认状态：TEST / UNBOUNDED / NO_REAL_NAME。
      *
-     * @param request SIM信息（iccid/imsi/msisdn/mnoType 均必填）
+     * @param request SIM信息（iccid 19-20位数字、imsi 15位数字、msisdn 手机号、mnoType 运营商类型）
      * @return 操作结果
      */
     @Log(title = "SIM卡管理", businessType = BusinessType.INSERT)
@@ -121,7 +122,7 @@ public class MptSimController extends BaseController {
     /**
      * 批量保存SIM信息
      * <p>
-     * 复用单条逻辑，部分失败时收集失败ICCID后整体返回。
+     * 复用单条逻辑，部分失败时收集失败ICCID后整体返回失败。
      *
      * @param request SIM信息列表
      * @return 操作结果
@@ -150,12 +151,13 @@ public class MptSimController extends BaseController {
     }
 
     /**
-     * 同步数据
+     * Hex编码数据同步
      * <p>
      * 接收Hex编码的JSON数组，解码后逐条Upsert。
-     * 强制状态字段：TEST/UNBOUNDED/NO_REAL_NAME。
+     * 强制状态字段：TEST / UNBOUNDED / NO_REAL_NAME。
+     * 允许覆盖 IMSI/MSISDN/source_*。
      *
-     * @param request Hex编码数据
+     * @param request Hex编码的JSON数据
      * @return 操作结果
      */
     @Log(title = "SIM卡管理", businessType = BusinessType.IMPORT)
@@ -177,7 +179,8 @@ public class MptSimController extends BaseController {
     /**
      * 更新SIM信息（仅MANUAL来源可更新）
      * <p>
-     * 路径iccid与请求体iccid必须一致。运营商来源（CMCC/CUCC）记录不可更新。
+     * 路径iccid与请求体iccid必须一致，否则拒绝。
+     * 运营商来源（CMCC/CUCC）记录不可更新。
      *
      * @param iccid   路径中的ICCID（决定更新目标）
      * @param request 更新内容（iccid必须与路径一致）
@@ -246,13 +249,29 @@ public class MptSimController extends BaseController {
         } catch (BatchSaveException e) {
             log.warn("批量删除部分失败: {}", e.getMessage());
             return ApiResponse.fail("批量删除部分失败，失败ICCID: " + String.join(", ", e.getFailedIccids()));
+        } catch (ServiceException e) {
+            log.warn("批量删除失败: {}", e.getMessage());
+            return ApiResponse.fail(e.getMessage());
         }
     }
 
     /**
-     * 请求体转SimInfo实体
+     * 请求体转SimInfo实体，附带格式校验
+     *
+     * @param request 请求体（已通过@Validated基础校验）
+     * @return SimInfo实体
+     * @throws ServiceException 格式不合法时抛出
      */
     private SimInfo convertToSimInfo(SimInfoRequest request) {
+        if (request.getIccid() == null || !request.getIccid().matches("^\\d{19,20}$")) {
+            throw new ServiceException("ICCID格式不正确，必须为19-20位数字");
+        }
+        if (request.getImsi() == null || !request.getImsi().matches("^\\d{15}$")) {
+            throw new ServiceException("IMSI格式不正确，必须为15位数字");
+        }
+        if (request.getMsisdn() == null || !request.getMsisdn().matches("^(86)?1[3-9]\\d{9}$")) {
+            throw new ServiceException("MSISDN格式不正确");
+        }
         return SimInfo.builder()
                 .iccid(request.getIccid())
                 .imsi(request.getImsi())
