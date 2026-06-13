@@ -76,4 +76,12 @@ public interface ManualSimService {
      * @throws net.hwyz.iov.cloud.iov.ccs.service.application.service.exception.ServiceException 不存在时抛出
      */
     void deleteSimInfo(String iccid);
+
+    /**
+     * 批量删除SIM信息（物理删除+审计）
+     *
+     * @param iccids ICCID列表
+     * @throws net.hwyz.iov.cloud.iov.ccs.service.application.service.exception.BatchSaveException 部分失败时抛出
+     */
+    void batchDeleteSimInfo(List<String> iccids);
 }

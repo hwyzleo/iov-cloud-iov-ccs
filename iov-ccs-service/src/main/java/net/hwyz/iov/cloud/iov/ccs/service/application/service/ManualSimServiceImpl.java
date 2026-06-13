@@ -224,4 +224,29 @@ public class ManualSimServiceImpl implements ManualSimService {
         simInfoRepository.deleteById(existing.getId());
         log.info("SIM信息删除成功: iccid={}, sourceMno={}", iccid, existing.getSourceMno());
     }
+
+    @Override
+    @Transactional
+    public void batchDeleteSimInfo(List<String> iccids) {
+        log.info("批量删除SIM信息: count={}", iccids != null ? iccids.size() : 0);
+
+        if (iccids == null || iccids.isEmpty()) {
+            return;
+        }
+
+        List<String> failedIccids = new ArrayList<>();
+
+        for (String iccid : iccids) {
+            try {
+                deleteSimInfo(iccid);
+            } catch (Exception e) {
+                log.warn("SIM信息删除失败: iccid={}, error={}", iccid, e.getMessage());
+                failedIccids.add(iccid);
+            }
+        }
+
+        if (!failedIccids.isEmpty()) {
+            throw new BatchSaveException("批量删除部分失败: " + failedIccids.size() + "条", failedIccids);
+        }
+    }
 }

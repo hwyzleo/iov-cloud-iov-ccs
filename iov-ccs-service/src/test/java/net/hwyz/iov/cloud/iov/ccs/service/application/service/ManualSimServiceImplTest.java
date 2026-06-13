@@ -349,4 +349,49 @@ class ManualSimServiceImplTest {
         assertThrows(ServiceException.class, () -> manualSimService.deleteSimInfo("not_exist"));
         verify(simInfoRepository, never()).deleteById(any());
     }
+
+    // ========== batchDeleteSimInfo ==========
+
+    @Test
+    @DisplayName("批量删除 - 全部成功不抛异常")
+    void batchDeleteSimInfo_allSuccess() {
+        SimInfo sim1 = SimInfo.builder().id(1L).iccid("89860123456789012341").sourceMno("MANUAL").build();
+        SimInfo sim2 = SimInfo.builder().id(2L).iccid("89860123456789012342").sourceMno("MANUAL").build();
+        when(simInfoRepository.getByIccid("89860123456789012341")).thenReturn(sim1);
+        when(simInfoRepository.getByIccid("89860123456789012342")).thenReturn(sim2);
+
+        manualSimService.batchDeleteSimInfo(List.of("89860123456789012341", "89860123456789012342"));
+
+        verify(simInfoRepository).deleteById(1L);
+        verify(simInfoRepository).deleteById(2L);
+    }
+
+    @Test
+    @DisplayName("批量删除 - 部分失败抛BatchSaveException")
+    void batchDeleteSimInfo_partialFail() {
+        SimInfo sim1 = SimInfo.builder().id(1L).iccid("89860123456789012341").sourceMno("MANUAL").build();
+        when(simInfoRepository.getByIccid("89860123456789012341")).thenReturn(sim1);
+        when(simInfoRepository.getByIccid("not_exist")).thenReturn(null);
+
+        BatchSaveException ex = assertThrows(BatchSaveException.class,
+                () -> manualSimService.batchDeleteSimInfo(List.of("89860123456789012341", "not_exist")));
+
+        assertEquals(1, ex.getFailedIccids().size());
+        assertTrue(ex.getFailedIccids().contains("not_exist"));
+        verify(simInfoRepository).deleteById(1L);
+    }
+
+    @Test
+    @DisplayName("批量删除 - 空列表不操作")
+    void batchDeleteSimInfo_emptyList() {
+        manualSimService.batchDeleteSimInfo(List.of());
+        verify(simInfoRepository, never()).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("批量删除 - null列表不操作")
+    void batchDeleteSimInfo_nullList() {
+        manualSimService.batchDeleteSimInfo(null);
+        verify(simInfoRepository, never()).deleteById(any());
+    }
 }

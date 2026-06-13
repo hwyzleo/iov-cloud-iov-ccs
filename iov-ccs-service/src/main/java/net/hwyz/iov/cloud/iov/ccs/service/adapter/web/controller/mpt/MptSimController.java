@@ -10,6 +10,7 @@ import net.hwyz.iov.cloud.framework.security.annotation.RequiresPermissions;
 import net.hwyz.iov.cloud.framework.web.context.SecurityContextHolder;
 import net.hwyz.iov.cloud.framework.web.controller.BaseController;
 import net.hwyz.iov.cloud.iov.ccs.service.adapter.web.vo.request.BatchSimInfoRequest;
+import net.hwyz.iov.cloud.iov.ccs.service.adapter.web.vo.request.SimInfoQueryRequest;
 import net.hwyz.iov.cloud.iov.ccs.service.adapter.web.vo.request.SimInfoRequest;
 import net.hwyz.iov.cloud.iov.ccs.service.adapter.web.vo.request.SyncDataRequest;
 import net.hwyz.iov.cloud.iov.ccs.service.application.service.ManualSimService;
@@ -26,7 +27,17 @@ import java.util.Map;
 /**
  * SIM卡信息管理接口
  * <p>
- * 后台管理接口，用于手动录入和管理SIM卡信息
+ * 后台管理接口，用于手动录入和管理SIM卡信息。
+ * <ul>
+ *   <li>POST   /                    - 保存单条SIM信息</li>
+ *   <li>POST   /batch               - 批量保存SIM信息</li>
+ *   <li>POST   /sync                - Hex编码数据同步（Upsert）</li>
+ *   <li>GET    /list                 - 分页条件查询</li>
+ *   <li>GET    /{iccid}              - 查询详情</li>
+ *   <li>PUT    /{iccid}              - 更新（仅MANUAL来源）</li>
+ *   <li>DELETE /{iccid}              - 删除单条</li>
+ *   <li>DELETE /batch/{iccids}       - 批量删除</li>
+ * </ul>
  *
  * @author hwyz_leo
  */
@@ -40,21 +51,27 @@ public class MptSimController extends BaseController {
 
     /**
      * 查询SIM信息列表（分页+筛选）
+     *
+     * @param query 查询条件（iccid/imsi/msisdn/sourceMno）
+     * @return 分页结果
      */
     @RequiresPermissions("ccs:simInfo:list")
     @GetMapping("/list")
-    public ApiResponse<PageInfo<SimInfo>> list(
-            @RequestParam(required = false) String iccid,
-            @RequestParam(required = false) String imsi,
-            @RequestParam(required = false) String msisdn,
-            @RequestParam(required = false) String sourceMno) {
-
+    public ApiResponse<PageInfo<SimInfo>> list(@Validated SimInfoQueryRequest query) {
         startPage();
         Map<String, Object> params = new HashMap<>();
-        if (iccid != null && !iccid.isEmpty()) params.put("iccid", iccid);
-        if (imsi != null && !imsi.isEmpty()) params.put("imsi", imsi);
-        if (msisdn != null && !msisdn.isEmpty()) params.put("msisdn", msisdn);
-        if (sourceMno != null && !sourceMno.isEmpty()) params.put("sourceMno", sourceMno);
+        if (query.getIccid() != null && !query.getIccid().isEmpty()) {
+            params.put("iccid", query.getIccid());
+        }
+        if (query.getImsi() != null && !query.getImsi().isEmpty()) {
+            params.put("imsi", query.getImsi());
+        }
+        if (query.getMsisdn() != null && !query.getMsisdn().isEmpty()) {
+            params.put("msisdn", query.getMsisdn());
+        }
+        if (query.getSourceMno() != null && !query.getSourceMno().isEmpty()) {
+            params.put("sourceMno", query.getSourceMno());
+        }
 
         List<SimInfo> list = manualSimService.listSimInfo(params);
         return ApiResponse.ok(new PageInfo<>(list));
@@ -62,6 +79,9 @@ public class MptSimController extends BaseController {
 
     /**
      * 查询SIM信息详情
+     *
+     * @param iccid ICCID
+     * @return SIM信息
      */
     @RequiresPermissions("ccs:simInfo:query")
     @GetMapping("/{iccid}")
@@ -76,6 +96,11 @@ public class MptSimController extends BaseController {
 
     /**
      * 保存单条SIM信息
+     * <p>
+     * ICCID已存在时拒绝保存。入库前会执行格式校验和规范化。
+     *
+     * @param request SIM信息（iccid/imsi/msisdn/mnoType 均必填）
+     * @return 操作结果
      */
     @Log(title = "SIM卡管理", businessType = BusinessType.INSERT)
     @RequiresPermissions("ccs:simInfo:add")
@@ -95,6 +120,11 @@ public class MptSimController extends BaseController {
 
     /**
      * 批量保存SIM信息
+     * <p>
+     * 复用单条逻辑，部分失败时收集失败ICCID后整体返回。
+     *
+     * @param request SIM信息列表
+     * @return 操作结果
      */
     @Log(title = "SIM卡管理", businessType = BusinessType.INSERT)
     @RequiresPermissions("ccs:simInfo:batchAdd")
@@ -121,6 +151,12 @@ public class MptSimController extends BaseController {
 
     /**
      * 同步数据
+     * <p>
+     * 接收Hex编码的JSON数组，解码后逐条Upsert。
+     * 强制状态字段：TEST/UNBOUNDED/NO_REAL_NAME。
+     *
+     * @param request Hex编码数据
+     * @return 操作结果
      */
     @Log(title = "SIM卡管理", businessType = BusinessType.IMPORT)
     @RequiresPermissions("ccs:simInfo:sync")
@@ -140,11 +176,23 @@ public class MptSimController extends BaseController {
 
     /**
      * 更新SIM信息（仅MANUAL来源可更新）
+     * <p>
+     * 路径iccid与请求体iccid必须一致。运营商来源（CMCC/CUCC）记录不可更新。
+     *
+     * @param iccid   路径中的ICCID（决定更新目标）
+     * @param request 更新内容（iccid必须与路径一致）
+     * @return 操作结果
      */
     @Log(title = "SIM卡管理", businessType = BusinessType.UPDATE)
     @RequiresPermissions("ccs:simInfo:edit")
     @PutMapping("/{iccid}")
-    public ApiResponse<Void> update(@PathVariable String iccid, @RequestBody SimInfoRequest request) {
+    public ApiResponse<Void> update(@PathVariable String iccid, @Validated @RequestBody SimInfoRequest request) {
+        // 路径与body的iccid一致性校验
+        if (!iccid.equals(request.getIccid())) {
+            log.warn("更新SIM信息失败: 路径iccid[{}]与请求体iccid[{}]不一致", iccid, request.getIccid());
+            return ApiResponse.fail("路径ICCID与请求体ICCID不一致");
+        }
+
         log.info("管理后台用户[{}]更新SIM信息: iccid={}", SecurityContextHolder.getUserName(), iccid);
 
         try {
@@ -158,7 +206,10 @@ public class MptSimController extends BaseController {
     }
 
     /**
-     * 删除SIM信息（硬删除+审计）
+     * 删除单条SIM信息（硬删除+审计）
+     *
+     * @param iccid ICCID
+     * @return 操作结果
      */
     @Log(title = "SIM卡管理", businessType = BusinessType.DELETE)
     @RequiresPermissions("ccs:simInfo:remove")
@@ -176,7 +227,30 @@ public class MptSimController extends BaseController {
     }
 
     /**
-     * 转换为SimInfo
+     * 批量删除SIM信息（硬删除+审计）
+     * <p>
+     * 部分失败时收集失败ICCID后整体返回。
+     *
+     * @param iccids ICCID列表（逗号分隔）
+     * @return 操作结果
+     */
+    @Log(title = "SIM卡管理", businessType = BusinessType.DELETE)
+    @RequiresPermissions("ccs:simInfo:remove")
+    @DeleteMapping("/batch/{iccids}")
+    public ApiResponse<Void> batchDelete(@PathVariable List<String> iccids) {
+        log.info("管理后台用户[{}]批量删除SIM信息: count={}", SecurityContextHolder.getUserName(), iccids.size());
+
+        try {
+            manualSimService.batchDeleteSimInfo(iccids);
+            return ApiResponse.ok();
+        } catch (BatchSaveException e) {
+            log.warn("批量删除部分失败: {}", e.getMessage());
+            return ApiResponse.fail("批量删除部分失败，失败ICCID: " + String.join(", ", e.getFailedIccids()));
+        }
+    }
+
+    /**
+     * 请求体转SimInfo实体
      */
     private SimInfo convertToSimInfo(SimInfoRequest request) {
         return SimInfo.builder()
