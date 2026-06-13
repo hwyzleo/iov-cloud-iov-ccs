@@ -42,13 +42,13 @@ public class CmccClientImpl implements CmccClient {
         // 2. 如果不存在或过期，使用分布式锁 MNO:CMCC:TOKEN:LOCK 获取新Token
         // 3. 调用CMCC认证接口获取Token
         // 4. 缓存到Redis
-        logger.info("获取CMCC Token");
+        log.info("获取CMCC Token");
         return "mock-token";
     }
 
     @Override
     public FileRequestResult requestFile(String requestType, LocalDateTime startDate, LocalDateTime endDate, boolean encrypted) {
-        logger.info("发起CMCC文件请求: type={}, startDate={}, endDate={}, encrypted={}",
+        log.info("发起CMCC文件请求: type={}, startDate={}, endDate={}, encrypted={}",
                 requestType, startDate.format(DATE_FORMATTER), endDate.format(DATE_FORMATTER), encrypted);
 
         // TODO: 实现真实的CMCC文件请求
@@ -61,13 +61,13 @@ public class CmccClientImpl implements CmccClient {
         String mockFileId = "FILE_" + System.currentTimeMillis();
         String mockTimestamp = String.valueOf(System.currentTimeMillis());
 
-        logger.info("CMCC文件请求成功: fileId={}, timestamp={}", mockFileId, mockTimestamp);
+        log.info("CMCC文件请求成功: fileId={}, timestamp={}", mockFileId, mockTimestamp);
         return new FileRequestResult(mockFileId, mockTimestamp, true, null);
     }
 
     @Override
     public byte[] downloadFile(String fileId, String timestamp) {
-        logger.info("下载CMCC文件: fileId={}, timestamp={}", fileId, timestamp);
+        log.info("下载CMCC文件: fileId={}, timestamp={}", fileId, timestamp);
 
         // TODO: 实现真实的CMCC文件下载
         // 1. 获取Token
@@ -76,7 +76,7 @@ public class CmccClientImpl implements CmccClient {
         // 4. 返回文件内容
 
         // Mock实现：返回空字节数组
-        logger.info("CMCC文件下载完成: fileId={}", fileId);
+        log.info("CMCC文件下载完成: fileId={}", fileId);
         return new byte[0];
     }
 }

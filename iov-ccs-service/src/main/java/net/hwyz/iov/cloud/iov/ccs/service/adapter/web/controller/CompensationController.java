@@ -36,7 +36,7 @@ public class CompensationController {
      */
     @PostMapping("/cmcc/rerun/file/{fileId}")
     public ResponseEntity<Map<String, Object>> rerunByFileId(@PathVariable String fileId) {
-        logger.info("运维操作：按fileId重跑: fileId={}", fileId);
+        log.info("运维操作：按fileId重跑: fileId={}", fileId);
 
         boolean result = compensationService.rerunByFileId(fileId);
 
@@ -67,7 +67,7 @@ public class CompensationController {
             @RequestParam("startDate") String startDate,
             @RequestParam("endDate") String endDate) {
 
-        logger.info("运维操作：按日期范围重跑: startDate={}, endDate={}", startDate, endDate);
+        log.info("运维操作：按日期范围重跑: startDate={}, endDate={}", startDate, endDate);
 
         try {
             LocalDateTime start = LocalDateTime.parse(startDate, DATE_FORMATTER);
@@ -82,7 +82,7 @@ public class CompensationController {
                     "count", count
             ));
         } catch (Exception e) {
-            logger.error("日期解析失败", e);
+            log.error("日期解析失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                     "code", 400,
                     "success", false,
@@ -98,7 +98,7 @@ public class CompensationController {
      */
     @PostMapping("/candidates/scan-retry")
     public ResponseEntity<Map<String, Object>> scanAndRetryCandidates() {
-        logger.info("运维操作：扫描并重试候选表");
+        log.info("运维操作：扫描并重试候选表");
 
         int count = compensationService.scanAndRetryCandidates();
 
@@ -117,7 +117,7 @@ public class CompensationController {
      */
     @GetMapping("/cmcc/pending-retry")
     public ResponseEntity<Map<String, Object>> listPendingRetryFileIds() {
-        logger.info("运维操作：获取待重试记录列表");
+        log.info("运维操作：获取待重试记录列表");
 
         List<String> fileIds = compensationService.listPendingRetryFileIds();
 
@@ -135,7 +135,7 @@ public class CompensationController {
      */
     @GetMapping("/candidates/statistics")
     public ResponseEntity<Map<String, Object>> getCandidateStatistics() {
-        logger.info("运维操作：获取候选表统计信息");
+        log.info("运维操作：获取候选表统计信息");
 
         List<Object[]> statistics = compensationService.getCandidateStatistics();
 

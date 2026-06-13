@@ -35,7 +35,7 @@ public class ManualSimServiceImpl implements ManualSimService {
     @Override
     @Transactional
     public void saveSimInfo(SimInfo simInfo) {
-        logger.info("手动保存SIM信息: iccid={}", simInfo.getIccid());
+        log.info("手动保存SIM信息: iccid={}", simInfo.getIccid());
 
         // 规范化
         SimInfo normalizedSim = simNormalizationService.normalize(simInfo);
@@ -61,13 +61,13 @@ public class ManualSimServiceImpl implements ManualSimService {
 
         // 保存
         simInfoRepository.save(normalizedSim);
-        logger.info("SIM信息保存成功: iccid={}", normalizedSim.getIccid());
+        log.info("SIM信息保存成功: iccid={}", normalizedSim.getIccid());
     }
 
     @Override
     @Transactional
     public void batchSaveSimInfo(List<SimInfo> simInfoList) {
-        logger.info("批量保存SIM信息: count={}", simInfoList != null ? simInfoList.size() : 0);
+        log.info("批量保存SIM信息: count={}", simInfoList != null ? simInfoList.size() : 0);
 
         if (simInfoList == null || simInfoList.isEmpty()) {
             return;
@@ -79,7 +79,7 @@ public class ManualSimServiceImpl implements ManualSimService {
             try {
                 saveSimInfo(simInfo);
             } catch (Exception e) {
-                logger.warn("SIM信息保存失败: iccid={}, error={}", simInfo.getIccid(), e.getMessage());
+                log.warn("SIM信息保存失败: iccid={}, error={}", simInfo.getIccid(), e.getMessage());
                 failedIccids.add(simInfo.getIccid());
             }
         }
@@ -92,7 +92,7 @@ public class ManualSimServiceImpl implements ManualSimService {
     @Override
     @Transactional
     public void syncData(String hexData) {
-        logger.info("同步SIM数据: hexLength={}", hexData != null ? hexData.length() : 0);
+        log.info("同步SIM数据: hexLength={}", hexData != null ? hexData.length() : 0);
 
         if (hexData == null || hexData.isEmpty()) {
             throw new ServiceException("Hex数据不能为空");
@@ -107,7 +107,7 @@ public class ManualSimServiceImpl implements ManualSimService {
             List<Map<String, String>> dataList = objectMapper.readValue(json, new TypeReference<>() {});
 
             if (dataList == null || dataList.isEmpty()) {
-                logger.info("同步数据为空");
+                log.info("同步数据为空");
                 return;
             }
 
@@ -140,7 +140,7 @@ public class ManualSimServiceImpl implements ManualSimService {
                 simInfoRepository.upsertSimInfo(normalizedSim);
             }
 
-            logger.info("同步SIM数据完成: count={}", dataList.size());
+            log.info("同步SIM数据完成: count={}", dataList.size());
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {

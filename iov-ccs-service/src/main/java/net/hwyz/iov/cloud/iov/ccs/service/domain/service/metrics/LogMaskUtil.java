@@ -99,21 +99,26 @@ public final class LogMaskUtil {
             return json;
         }
 
-        // 简单实现：替换常见字段值
         String result = json;
-
-        // 匹配 "msisdn": "xxx" 或 "msisdn":"xxx"
-        result = result.replaceAll("(\"msisdn\"\\s*:\\s*\")([^\"]+)(\")",
-                "$1" + mask("$2") + "$3");
-
-        // 匹配 "imsi": "xxx" 或 "imsi":"xxx"
-        result = result.replaceAll("(\"imsi\"\\s*:\\s*\")([^\"]+)(\")",
-                "$1" + mask("$2") + "$3");
-
-        // 匹配 "iccid": "xxx" 或 "iccid":"xxx"
-        result = result.replaceAll("(\"iccid\"\\s*:\\s*\")([^\"]+)(\")",
-                "$1" + mask("$2") + "$3");
-
+        result = maskJsonField(result, "msisdn");
+        result = maskJsonField(result, "imsi");
+        result = maskJsonField(result, "iccid");
         return result;
+    }
+
+    /**
+     * 脱敏JSON中指定字段的值
+     */
+    private static String maskJsonField(String json, String fieldName) {
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
+                "(\"" + java.util.regex.Pattern.quote(fieldName) + "\"\\s*:\\s*\")([^\"]+)(\")");
+        java.util.regex.Matcher matcher = pattern.matcher(json);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            matcher.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(
+                    matcher.group(1) + mask(matcher.group(2)) + matcher.group(3)));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 }

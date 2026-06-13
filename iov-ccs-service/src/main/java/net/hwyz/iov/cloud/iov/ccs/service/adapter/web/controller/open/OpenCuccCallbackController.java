@@ -46,13 +46,13 @@ public class OpenCuccCallbackController {
         if (!securityService.verifySignature(request.getAppid(), request.getTimestamp(),
                 request.getNonce(), request.getSignature(), body)) {
             log.warn("CUCC签名验证失败: appid={}", request.getAppid());
-            return ApiResponse.fail(401, "签名验证失败");
+            return ApiResponse.fail("签名验证失败");
         }
 
         // Step 2: 防重放检查
         if (securityService.isReplayAttack(request.getTimestamp(), request.getNonce())) {
             log.warn("CUCC重放攻击检测: appid={}, nonce={}", request.getAppid(), request.getNonce());
-            return ApiResponse.fail(403, "重放攻击检测");
+            return ApiResponse.fail("重放攻击检测");
         }
 
         // Step 3: data为空直接返回成功
@@ -73,7 +73,7 @@ public class OpenCuccCallbackController {
         if (result.success()) {
             return ApiResponse.ok();
         } else {
-            return ApiResponse.fail(409, "部分失败，失败ICCID: " + String.join(", ", result.failedIccids()));
+            return ApiResponse.fail("部分失败，失败ICCID: " + String.join(", ", result.failedIccids()));
         }
     }
 

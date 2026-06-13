@@ -33,12 +33,12 @@ public class SimInfoServiceImpl implements SimInfoService {
     @EventListener
     @Transactional
     public void handleStorageEvent(SimStorageEvent event) {
-        logger.info("处理SIM存储事件: batchType={}, batchNo={}, sourceMno={}, count={}",
+        log.info("处理SIM存储事件: batchType={}, batchNo={}, sourceMno={}, count={}",
                 event.getBatchType(), event.getBatchNo(), event.getSourceMno(),
                 event.getSimInfoList() != null ? event.getSimInfoList().size() : 0);
 
         if (event.getSimInfoList() == null || event.getSimInfoList().isEmpty()) {
-            logger.info("SIM列表为空，跳过处理");
+            log.info("SIM列表为空，跳过处理");
             return;
         }
 
@@ -56,7 +56,7 @@ public class SimInfoServiceImpl implements SimInfoService {
                     if (MnoType.CMCC.getCode().equals(event.getSourceMno())
                             || MnoType.CUCC.getCode().equals(event.getSourceMno())) {
                         // CMCC/CUCC：幂等跳过，不覆盖
-                        logger.debug("ICCID已存在，跳过: iccid={}", simInfo.getIccid());
+                        log.debug("ICCID已存在，跳过: iccid={}", simInfo.getIccid());
                         duplicateCount++;
 
                         // 检查数据差异
@@ -69,11 +69,11 @@ public class SimInfoServiceImpl implements SimInfoService {
                     // ICCID不存在，插入新记录
                     simInfoRepository.save(simInfo);
                     successCount++;
-                    logger.debug("SIM信息保存成功: iccid={}", simInfo.getIccid());
+                    log.debug("SIM信息保存成功: iccid={}", simInfo.getIccid());
                 }
             } catch (Exception e) {
                 failedCount++;
-                logger.error("SIM信息保存失败: iccid={}", simInfo.getIccid(), e);
+                log.error("SIM信息保存失败: iccid={}", simInfo.getIccid(), e);
 
                 // 发布告警事件
                 eventPublisher.publishEvent(BusinessAlertEvent.builder()
@@ -86,7 +86,7 @@ public class SimInfoServiceImpl implements SimInfoService {
             }
         }
 
-        logger.info("SIM存储事件处理完成: batchNo={}, success={}, duplicate={}, failed={}",
+        log.info("SIM存储事件处理完成: batchNo={}, success={}, duplicate={}, failed={}",
                 event.getBatchNo(), successCount, duplicateCount, failedCount);
     }
 
@@ -95,7 +95,7 @@ public class SimInfoServiceImpl implements SimInfoService {
     public boolean saveSimInfo(SimInfo simInfo) {
         // 检查ICCID是否已存在
         if (simInfoRepository.existsByIccid(simInfo.getIccid())) {
-            logger.warn("ICCID已存在，拒绝保存: iccid={}", simInfo.getIccid());
+            log.warn("ICCID已存在，拒绝保存: iccid={}", simInfo.getIccid());
             return false;
         }
 
@@ -116,11 +116,11 @@ public class SimInfoServiceImpl implements SimInfoService {
             existingSim.setSourceType(simInfo.getSourceType());
             existingSim.setSourceRef(simInfo.getSourceRef());
             simInfoRepository.update(existingSim);
-            logger.debug("SIM信息更新成功: iccid={}", simInfo.getIccid());
+            log.debug("SIM信息更新成功: iccid={}", simInfo.getIccid());
         } else {
             // 插入
             simInfoRepository.save(simInfo);
-            logger.debug("SIM信息插入成功: iccid={}", simInfo.getIccid());
+            log.debug("SIM信息插入成功: iccid={}", simInfo.getIccid());
         }
     }
 
@@ -136,7 +136,7 @@ public class SimInfoServiceImpl implements SimInfoService {
                 && !existing.getMsisdn().equals(incoming.getMsisdn());
 
         if (imsiMismatch || msisdnMismatch) {
-            logger.warn("SIM数据差异: iccid={}, imsiMatch={}, msisdnMatch={}",
+            log.warn("SIM数据差异: iccid={}, imsiMatch={}, msisdnMatch={}",
                     existing.getIccid(), !imsiMismatch, !msisdnMismatch);
 
             // 发布告警事件（日志不含明文）

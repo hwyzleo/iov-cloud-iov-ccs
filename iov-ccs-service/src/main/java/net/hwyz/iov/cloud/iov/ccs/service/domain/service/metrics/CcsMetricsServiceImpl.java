@@ -30,7 +30,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .tag("success", String.valueOf(success))
                 .register(meterRegistry)
                 .record(java.time.Duration.ofMillis(durationMs));
-        logger.debug("CMCC请求耗时: {}ms, success={}", durationMs, success);
+        log.debug("CMCC请求耗时: {}ms, success={}", durationMs, success);
     }
 
     @Override
@@ -40,7 +40,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .tag("success", String.valueOf(success))
                 .register(meterRegistry)
                 .record(java.time.Duration.ofMillis(durationMs));
-        logger.debug("CMCC下载耗时: {}ms, success={}", durationMs, success);
+        log.debug("CMCC下载耗时: {}ms, success={}", durationMs, success);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .tag("success", String.valueOf(success))
                 .register(meterRegistry)
                 .record(java.time.Duration.ofMillis(durationMs));
-        logger.debug("CMCC解密耗时: {}ms, success={}", durationMs, success);
+        log.debug("CMCC解密耗时: {}ms, success={}", durationMs, success);
     }
 
     @Override
@@ -60,7 +60,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .tag("success", String.valueOf(success))
                 .register(meterRegistry)
                 .record(java.time.Duration.ofMillis(durationMs));
-        logger.debug("CMCC解析耗时: {}ms, success={}", durationMs, success);
+        log.debug("CMCC解析耗时: {}ms, success={}", durationMs, success);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .register(meterRegistry)
                 .increment(failed);
 
-        logger.debug("CMCC入库统计: success={}, duplicate={}, failed={}", success, duplicate, failed);
+        log.debug("CMCC入库统计: success={}, duplicate={}, failed={}", success, duplicate, failed);
     }
 
     // ==================== CUCC指标 ====================
@@ -91,7 +91,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .description("CUCC推送次数")
                 .register(meterRegistry)
                 .increment(count);
-        logger.debug("CUCC推送计数: {}", count);
+        log.debug("CUCC推送计数: {}", count);
     }
 
     @Override
@@ -100,7 +100,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .description("CUCC验签失败次数")
                 .register(meterRegistry)
                 .increment();
-        logger.debug("CUCC验签失败");
+        log.debug("CUCC验签失败");
     }
 
     @Override
@@ -109,7 +109,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .description("CUCC重放攻击拒绝次数")
                 .register(meterRegistry)
                 .increment();
-        logger.debug("CUCC重放攻击拒绝");
+        log.debug("CUCC重放攻击拒绝");
     }
 
     @Override
@@ -129,7 +129,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .register(meterRegistry)
                 .increment(failed);
 
-        logger.debug("CUCC入库统计: success={}, duplicate={}, failed={}", success, duplicate, failed);
+        log.debug("CUCC入库统计: success={}, duplicate={}, failed={}", success, duplicate, failed);
     }
 
     // ==================== MANUAL指标 ====================
@@ -140,7 +140,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .description("MANUAL保存成功次数")
                 .register(meterRegistry)
                 .increment();
-        logger.debug("MANUAL保存成功");
+        log.debug("MANUAL保存成功");
     }
 
     @Override
@@ -150,7 +150,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .tag("reason", reason)
                 .register(meterRegistry)
                 .increment();
-        logger.debug("MANUAL保存失败: reason={}", reason);
+        log.debug("MANUAL保存失败: reason={}", reason);
     }
 
     @Override
@@ -165,7 +165,7 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .register(meterRegistry)
                 .increment(failCount);
 
-        logger.debug("MANUAL批量保存: total={}, fail={}", totalCount, failCount);
+        log.debug("MANUAL批量保存: total={}, fail={}", totalCount, failCount);
     }
 
     @Override
@@ -183,6 +183,6 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                     .increment(count);
         }
 
-        logger.debug("MANUAL同步数据: success={}, count={}", success, count);
+        log.debug("MANUAL同步数据: success={}, count={}", success, count);
     }
 }

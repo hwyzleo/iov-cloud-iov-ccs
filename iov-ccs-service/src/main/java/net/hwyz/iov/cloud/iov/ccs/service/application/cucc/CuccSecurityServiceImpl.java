@@ -50,7 +50,7 @@ public class CuccSecurityServiceImpl implements CuccSecurityService {
                     signature.getBytes(StandardCharsets.UTF_8)
             );
         } catch (Exception e) {
-            logger.error("签名验证失败", e);
+            log.error("签名验证失败", e);
             return false;
         }
     }
@@ -61,7 +61,7 @@ public class CuccSecurityServiceImpl implements CuccSecurityService {
         long now = System.currentTimeMillis();
         long timeDiff = Math.abs(now - timestamp);
         if (timeDiff > TimeUnit.MINUTES.toMillis(timeWindowMinutes)) {
-            logger.warn("请求时间戳超出允许范围: timestamp={}, now={}, diff={}ms", timestamp, now, timeDiff);
+            log.warn("请求时间戳超出允许范围: timestamp={}, now={}, diff={}ms", timestamp, now, timeDiff);
             return true;
         }
 
@@ -70,7 +70,7 @@ public class CuccSecurityServiceImpl implements CuccSecurityService {
         Long existingTimestamp = nonceCache.putIfAbsent(nonceKey, now);
 
         if (existingTimestamp != null) {
-            logger.warn("检测到重放攻击: nonce={}, timestamp={}", nonce, timestamp);
+            log.warn("检测到重放攻击: nonce={}, timestamp={}", nonce, timestamp);
             return true;
         }
 

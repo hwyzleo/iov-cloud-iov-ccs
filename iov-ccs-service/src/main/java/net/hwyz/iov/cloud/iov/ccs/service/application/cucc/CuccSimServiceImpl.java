@@ -34,10 +34,10 @@ public class CuccSimServiceImpl implements CuccSimService {
     @Override
     @Transactional
     public CuccProcessResult processSimInfo(String batchNo, List<SimInfo> simList) {
-        logger.info("处理CUCC SIM信息推送: batchNo={}, count={}", batchNo, simList != null ? simList.size() : 0);
+        log.info("处理CUCC SIM信息推送: batchNo={}, count={}", batchNo, simList != null ? simList.size() : 0);
 
         if (simList == null || simList.isEmpty()) {
-            logger.info("CUCC推送数据为空，直接返回成功");
+            log.info("CUCC推送数据为空，直接返回成功");
             return CuccProcessResult.emptyData();
         }
 
@@ -65,7 +65,7 @@ public class CuccSimServiceImpl implements CuccSimService {
                         .build();
                 candidates.add(candidate);
             } catch (Exception e) {
-                logger.warn("CUCC SIM数据规范化失败: iccid={}, error={}", simInfo.getIccid(), e.getMessage());
+                log.warn("CUCC SIM数据规范化失败: iccid={}, error={}", simInfo.getIccid(), e.getMessage());
                 failedIccids.add(simInfo.getIccid());
 
                 // 创建失败的候选记录
@@ -87,7 +87,7 @@ public class CuccSimServiceImpl implements CuccSimService {
         // Step 2: 批量保存候选记录
         if (!candidates.isEmpty()) {
             simImportCandidateRepository.batchSave(candidates);
-            logger.info("CUCC候选记录保存完成: batchNo={}, total={}, ok={}, invalid={}",
+            log.info("CUCC候选记录保存完成: batchNo={}, total={}, ok={}, invalid={}",
                     batchNo, candidates.size(), validSimList.size(), failedIccids.size());
         }
 

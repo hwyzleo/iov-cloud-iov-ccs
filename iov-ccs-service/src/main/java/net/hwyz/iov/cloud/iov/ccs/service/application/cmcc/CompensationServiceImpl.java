@@ -32,17 +32,17 @@ public class CompensationServiceImpl implements CompensationService {
     @Override
     @Transactional
     public boolean rerunByFileId(String fileId) {
-        logger.info("按fileId重跑CMCC文件处理: fileId={}", fileId);
+        log.info("按fileId重跑CMCC文件处理: fileId={}", fileId);
 
         CmccFileRequestRecord record = cmccFileRequestRecordRepository.getByFileId(fileId);
         if (record == null) {
-            logger.warn("未找到文件请求记录: fileId={}", fileId);
+            log.warn("未找到文件请求记录: fileId={}", fileId);
             return false;
         }
 
         // 只推进不回退：如果已处于终态，跳过
         if (isTerminalStatus(record.getStatus())) {
-            logger.info("记录已处于终态，跳过重跑: fileId={}, status={}", fileId, record.getStatus());
+            log.info("记录已处于终态，跳过重跑: fileId={}, status={}", fileId, record.getStatus());
             return false;
         }
 
@@ -56,14 +56,14 @@ public class CompensationServiceImpl implements CompensationService {
         // 触发处理流程
         cmccFileService.processFile(fileId);
 
-        logger.info("按fileId重跑完成: fileId={}", fileId);
+        log.info("按fileId重跑完成: fileId={}", fileId);
         return true;
     }
 
     @Override
     @Transactional
     public int rerunByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        logger.info("按日期范围重跑CMCC文件请求: startDate={}, endDate={}", startDate, endDate);
+        log.info("按日期范围重跑CMCC文件请求: startDate={}, endDate={}", startDate, endDate);
 
         // TODO: 查询指定日期范围内的失败记录
         // 1. 查询状态为FAILED且request_start在日期范围内的记录
@@ -71,14 +71,14 @@ public class CompensationServiceImpl implements CompensationService {
         // 3. 重新发起文件请求
 
         // Mock实现
-        logger.info("按日期范围重跑完成: 重跑0条记录");
+        log.info("按日期范围重跑完成: 重跑0条记录");
         return 0;
     }
 
     @Override
     @Transactional
     public int scanAndRetryCandidates() {
-        logger.info("扫描并重试候选表中PARSED/FAILED的记录");
+        log.info("扫描并重试候选表中PARSED/FAILED的记录");
 
         // TODO: 实现候选表扫描逻辑
         // 1. 查询store_status为PENDING且parse_status为OK的记录
@@ -86,13 +86,13 @@ public class CompensationServiceImpl implements CompensationService {
         // 3. 更新retry_count和store_status
 
         // Mock实现
-        logger.info("候选表扫描完成: 重试0条记录");
+        log.info("候选表扫描完成: 重试0条记录");
         return 0;
     }
 
     @Override
     public List<String> listPendingRetryFileIds() {
-        logger.info("获取待重试的CMCC记录列表");
+        log.info("获取待重试的CMCC记录列表");
 
         // TODO: 查询状态为PARSED/FAILED且retry_count < MAX_RETRY_COUNT的记录
         // 返回fileId列表
@@ -103,7 +103,7 @@ public class CompensationServiceImpl implements CompensationService {
 
     @Override
     public List<Object[]> getCandidateStatistics() {
-        logger.info("获取候选表统计信息");
+        log.info("获取候选表统计信息");
 
         // TODO: 按batchNo分组统计pending和failed数量
         // SELECT batch_no, 

@@ -55,7 +55,7 @@ public class CmccFileServiceImpl implements CmccFileService {
     @Override
     @Transactional
     public CmccFileRequestRecord requestFile() {
-        logger.info("开始CMCC文件请求任务");
+        log.info("开始CMCC文件请求任务");
 
         // 获取上次同步记录
         // TODO: 从数据库获取最新的记录
@@ -66,7 +66,7 @@ public class CmccFileServiceImpl implements CmccFileService {
         LocalDateTime startDate = dateRange[0];
         LocalDateTime endDate = dateRange[1];
 
-        logger.info("同步日期范围: {} ~ {}", startDate.format(DATE_FORMATTER), endDate.format(DATE_FORMATTER));
+        log.info("同步日期范围: {} ~ {}", startDate.format(DATE_FORMATTER), endDate.format(DATE_FORMATTER));
 
         // 创建请求记录
         CmccFileRequestRecord record = CmccFileRequestRecord.builder()
@@ -85,13 +85,13 @@ public class CmccFileServiceImpl implements CmccFileService {
                 record.setTs(result.timestamp());
                 record.setEncrypted(1);
                 cmccFileRequestRecordRepository.save(record);
-                logger.info("CMCC文件请求成功: fileId={}", result.fileId());
+                log.info("CMCC文件请求成功: fileId={}", result.fileId());
             } else {
                 record.setStatus(CmccRequestStatus.FAILED.getCode());
                 record.setFailureStage(CmccRequestStatus.APPLYING.getCode());
                 record.setFailureReason(result.errorMessage());
                 cmccFileRequestRecordRepository.save(record);
-                logger.error("CMCC文件请求失败: {}", result.errorMessage());
+                log.error("CMCC文件请求失败: {}", result.errorMessage());
 
                 // 发布告警事件
                 eventPublisher.publishEvent(BusinessAlertEvent.builder()
@@ -106,7 +106,7 @@ public class CmccFileServiceImpl implements CmccFileService {
             record.setFailureStage(CmccRequestStatus.APPLYING.getCode());
             record.setFailureReason(e.getMessage());
             cmccFileRequestRecordRepository.save(record);
-            logger.error("CMCC文件请求异常", e);
+            log.error("CMCC文件请求异常", e);
 
             // 发布告警事件
             eventPublisher.publishEvent(BusinessAlertEvent.builder()
@@ -123,18 +123,18 @@ public class CmccFileServiceImpl implements CmccFileService {
     @Override
     @Transactional
     public void handleCallback(String fileId, boolean successful, String message) {
-        logger.info("收到CMCC回调: fileId={}, successful={}, message={}", fileId, successful, message);
+        log.info("收到CMCC回调: fileId={}, successful={}, message={}", fileId, successful, message);
 
         // 查询请求记录
         CmccFileRequestRecord record = cmccFileRequestRecordRepository.getByFileId(fileId);
         if (record == null) {
-            logger.warn("未找到对应的文件请求记录: fileId={}", fileId);
+            log.warn("未找到对应的文件请求记录: fileId={}", fileId);
             return;
         }
 
         // 幂等检查：状态只推进不回退
         if (isTerminalStatus(record.getStatus())) {
-            logger.info("记录已处于终态，跳过处理: fileId={}, status={}", fileId, record.getStatus());
+            log.info("记录已处于终态，跳过处理: fileId={}, status={}", fileId, record.getStatus());
             return;
         }
 
@@ -144,7 +144,7 @@ public class CmccFileServiceImpl implements CmccFileService {
                 record.setFailureReason(message);
                 cmccFileRequestRecordRepository.update(record);
             }
-            logger.info("CMCC回调失败: fileId={}, message={}", fileId, message);
+            log.info("CMCC回调失败: fileId={}, message={}", fileId, message);
             return;
         }
 
@@ -155,17 +155,17 @@ public class CmccFileServiceImpl implements CmccFileService {
     @Override
     @Transactional
     public void processFile(String fileId) {
-        logger.info("开始处理CMCC文件: fileId={}", fileId);
+        log.info("开始处理CMCC文件: fileId={}", fileId);
 
         CmccFileRequestRecord record = cmccFileRequestRecordRepository.getByFileId(fileId);
         if (record == null) {
-            logger.error("未找到文件请求记录: fileId={}", fileId);
+            log.error("未找到文件请求记录: fileId={}", fileId);
             return;
         }
 
         // 幂等检查：如果已处于DOWNLOADED/DECRYPTED/PARSED/STORED，直接返回
         if (isAfterDownload(record.getStatus())) {
-            logger.info("文件已处理过，跳过: fileId={}, status={}", fileId, record.getStatus());
+            log.info("文件已处理过，跳过: fileId={}, status={}", fileId, record.getStatus());
             return;
         }
 
@@ -206,7 +206,7 @@ public class CmccFileServiceImpl implements CmccFileService {
             record.setStatus(CmccRequestStatus.STORED.getCode());
             cmccFileRequestRecordRepository.update(record);
 
-            logger.info("CMCC文件处理完成: fileId={}, total={}, success={}, duplicate={}, failed={}",
+            log.info("CMCC文件处理完成: fileId={}, total={}, success={}, duplicate={}, failed={}",
                     fileId, record.getParsedTotal(), record.getStoredSuccess(),
                     record.getStoredDuplicate(), record.getStoredFailed());
 
@@ -214,7 +214,7 @@ public class CmccFileServiceImpl implements CmccFileService {
             record.setStatus(CmccRequestStatus.FAILED.getCode());
             record.setFailureReason(e.getMessage());
             cmccFileRequestRecordRepository.update(record);
-            logger.error("CMCC文件处理失败: fileId={}", fileId, e);
+            log.error("CMCC文件处理失败: fileId={}", fileId, e);
 
             // 发布告警事件
             eventPublisher.publishEvent(BusinessAlertEvent.builder()
@@ -251,7 +251,7 @@ public class CmccFileServiceImpl implements CmccFileService {
      * 下载文件
      */
     private byte[] downloadFile(CmccFileRequestRecord record) {
-        logger.info("下载CMCC文件: fileId={}", record.getFileId());
+        log.info("下载CMCC文件: fileId={}", record.getFileId());
         byte[] content = cmccClient.downloadFile(record.getFileId(), record.getTs());
         if (content == null || content.length == 0) {
             throw new RuntimeException("文件下载失败: 内容为空");
@@ -267,7 +267,7 @@ public class CmccFileServiceImpl implements CmccFileService {
             return encryptedContent;
         }
 
-        logger.info("解密CMCC文件: fileId={}", record.getFileId());
+        log.info("解密CMCC文件: fileId={}", record.getFileId());
 
         // TODO: 实现真实的解密逻辑
         // key = SHA256(eSecret + timestamp)
@@ -281,7 +281,7 @@ public class CmccFileServiceImpl implements CmccFileService {
      * 解压ZIP文件
      */
     private String unzipFile(byte[] zipContent) {
-        logger.info("解压ZIP文件");
+        log.info("解压ZIP文件");
 
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipContent));
              ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -309,7 +309,7 @@ public class CmccFileServiceImpl implements CmccFileService {
      * CSV格式：MSISDN,IMSI,ICCID（首行为表头，从第二行开始解析）
      */
     private List<SimInfo> parseCsv(String csvContent, String fileId) {
-        logger.info("解析CSV文件");
+        log.info("解析CSV文件");
 
         List<SimInfo> simInfoList = new ArrayList<>();
         String[] lines = csvContent.split("\n");
@@ -322,7 +322,7 @@ public class CmccFileServiceImpl implements CmccFileService {
 
             String[] fields = line.split(",");
             if (fields.length < 3) {
-                logger.warn("CSV行格式错误: line={}", i + 1);
+                log.warn("CSV行格式错误: line={}", i + 1);
                 continue;
             }
 
@@ -350,11 +350,11 @@ public class CmccFileServiceImpl implements CmccFileService {
                 simInfo = simNormalizationService.normalize(simInfo);
                 simInfoList.add(simInfo);
             } catch (Exception e) {
-                logger.warn("SIM数据规范化失败: line={}, error={}", i + 1, e.getMessage());
+                log.warn("SIM数据规范化失败: line={}, error={}", i + 1, e.getMessage());
             }
         }
 
-        logger.info("CSV解析完成: total={}", simInfoList.size());
+        log.info("CSV解析完成: total={}", simInfoList.size());
         return simInfoList;
     }
 

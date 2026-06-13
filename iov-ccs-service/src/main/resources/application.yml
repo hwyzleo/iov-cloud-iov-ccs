@@ -1,2 +1,3 @@
 mybatis-plus:
   type-aliases-package: net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po
+  mapper-locations: classpath*:mappers/**/*.xml

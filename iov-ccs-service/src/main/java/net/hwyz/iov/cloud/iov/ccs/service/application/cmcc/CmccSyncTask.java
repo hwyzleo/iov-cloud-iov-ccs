@@ -24,13 +24,13 @@ public class CmccSyncTask {
      */
     @Scheduled(cron = "0 0 3 * * ?")
     public void executeFileRequest() {
-        logger.info("开始执行CMCC文件请求定时任务");
+        log.info("开始执行CMCC文件请求定时任务");
 
         try {
             cmccFileService.requestFile();
-            logger.info("CMCC文件请求定时任务执行完成");
+            log.info("CMCC文件请求定时任务执行完成");
         } catch (Exception e) {
-            logger.error("CMCC文件请求定时任务执行失败", e);
+            log.error("CMCC文件请求定时任务执行失败", e);
         }
     }
 
@@ -41,7 +41,7 @@ public class CmccSyncTask {
      */
     @Scheduled(cron = "0 */5 * * * ?")
     public void retryFailedTasks() {
-        logger.debug("检查并重试失败的CMCC任务");
+        log.debug("检查并重试失败的CMCC任务");
 
         // TODO: 实现重试逻辑
         // 1. 查询状态为PARSED/FAILED且retry_count < 3的记录
