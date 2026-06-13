@@ -41,6 +41,25 @@ public class SimInfoRepositoryImpl implements SimInfoRepository {
         return simInfoMapper.updatePo(po);
     }
 
+    @Override
+    public void upsertSimInfo(SimInfo simInfo) {
+        SimInfoPo existingPo = simInfoMapper.selectByIccid(simInfo.getIccid());
+
+        if (existingPo != null) {
+            // 更新：允许覆盖 IMSI/MSISDN/source_*
+            existingPo.setImsi(simInfo.getImsi());
+            existingPo.setMsisdn(simInfo.getMsisdn());
+            existingPo.setSourceMno(simInfo.getSourceMno());
+            existingPo.setSourceType(simInfo.getSourceType());
+            existingPo.setSourceRef(simInfo.getSourceRef());
+            simInfoMapper.updatePo(existingPo);
+        } else {
+            // 插入
+            SimInfoPo po = convertToPo(simInfo);
+            simInfoMapper.insertPo(po);
+        }
+    }
+
     /**
      * PO转实体
      *

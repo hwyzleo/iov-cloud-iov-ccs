@@ -1,0 +1,150 @@
+package net.hwyz.iov.cloud.iov.ccs.service.application.service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import net.hwyz.iov.cloud.iov.ccs.api.vo.enums.MnoType;
+import net.hwyz.iov.cloud.iov.ccs.service.application.service.exception.BatchSaveException;
+import net.hwyz.iov.cloud.iov.ccs.service.application.service.exception.ServiceException;
+import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.SimInfo;
+import net.hwyz.iov.cloud.iov.ccs.service.domain.repository.SimInfoRepository;
+import net.hwyz.iov.cloud.iov.ccs.service.domain.service.SimNormalizationService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 手动录入SIM服务实现
+ *
+ * @author hwyz_leo
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ManualSimServiceImpl implements ManualSimService {
+
+    private final SimInfoRepository simInfoRepository;
+    private final SimNormalizationService simNormalizationService;
+    private final ObjectMapper objectMapper;
+
+    @Override
+    @Transactional
+    public void saveSimInfo(SimInfo simInfo) {
+        logger.info("手动保存SIM信息: iccid={}", simInfo.getIccid());
+
+        // 规范化
+        SimInfo normalizedSim = simNormalizationService.normalize(simInfo);
+
+        // 设置默认状态
+        normalizedSim.setSimStatus(1);  // TEST
+        normalizedSim.setBindingStatus(0);  // UNBOUNDED
+        normalizedSim.setRealnameStatus(1);  // NO_REAL_NAME
+        normalizedSim.setSmsStatus(true);
+        normalizedSim.setDataStatus(true);
+        normalizedSim.setVoiceStatus(true);
+
+        // 设置来源
+        normalizedSim.setSourceMno(MnoType.MANUAL.getCode());
+        if (normalizedSim.getSourceType() == null) {
+            normalizedSim.setSourceType("manual_save");
+        }
+
+        // 检查ICCID是否已存在
+        if (simInfoRepository.existsByIccid(normalizedSim.getIccid())) {
+            throw new ServiceException("ICCID已存在: " + normalizedSim.getIccid());
+        }
+
+        // 保存
+        simInfoRepository.save(normalizedSim);
+        logger.info("SIM信息保存成功: iccid={}", normalizedSim.getIccid());
+    }
+
+    @Override
+    @Transactional
+    public void batchSaveSimInfo(List<SimInfo> simInfoList) {
+        logger.info("批量保存SIM信息: count={}", simInfoList != null ? simInfoList.size() : 0);
+
+        if (simInfoList == null || simInfoList.isEmpty()) {
+            return;
+        }
+
+        List<String> failedIccids = new ArrayList<>();
+
+        for (SimInfo simInfo : simInfoList) {
+            try {
+                saveSimInfo(simInfo);
+            } catch (Exception e) {
+                logger.warn("SIM信息保存失败: iccid={}, error={}", simInfo.getIccid(), e.getMessage());
+                failedIccids.add(simInfo.getIccid());
+            }
+        }
+
+        if (!failedIccids.isEmpty()) {
+            throw new BatchSaveException("批量保存部分失败: " + failedIccids.size() + "条", failedIccids);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void syncData(String hexData) {
+        logger.info("同步SIM数据: hexLength={}", hexData != null ? hexData.length() : 0);
+
+        if (hexData == null || hexData.isEmpty()) {
+            throw new ServiceException("Hex数据不能为空");
+        }
+
+        try {
+            // Step 1: Hex解码
+            byte[] bytes = HexFormat.of().parseHex(hexData);
+
+            // Step 2: JSON解析
+            String json = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+            List<Map<String, String>> dataList = objectMapper.readValue(json, new TypeReference<>() {});
+
+            if (dataList == null || dataList.isEmpty()) {
+                logger.info("同步数据为空");
+                return;
+            }
+
+            // Step 3: 处理每条记录
+            for (Map<String, String> data : dataList) {
+                String iccid = data.get("iccid");
+                String imsi = data.get("imsi");
+                String msisdn = data.get("msisdn");
+
+                SimInfo simInfo = SimInfo.builder()
+                        .iccid(iccid)
+                        .imsi(imsi)
+                        .msisdn(msisdn)
+                        .sourceMno(MnoType.MANUAL.getCode())
+                        .sourceType("sync_data")
+                        .build();
+
+                // 规范化
+                SimInfo normalizedSim = simNormalizationService.normalize(simInfo);
+
+                // 强制状态字段
+                normalizedSim.setSimStatus(1);  // TEST
+                normalizedSim.setBindingStatus(0);  // UNBOUNDED
+                normalizedSim.setRealnameStatus(1);  // NO_REAL_NAME
+                normalizedSim.setSmsStatus(true);
+                normalizedSim.setDataStatus(true);
+                normalizedSim.setVoiceStatus(true);
+
+                // Upsert语义
+                simInfoRepository.upsertSimInfo(normalizedSim);
+            }
+
+            logger.info("同步SIM数据完成: count={}", dataList.size());
+        } catch (ServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ServiceException("Hex解码或JSON解析失败: " + e.getMessage(), e);
+        }
+    }
+}

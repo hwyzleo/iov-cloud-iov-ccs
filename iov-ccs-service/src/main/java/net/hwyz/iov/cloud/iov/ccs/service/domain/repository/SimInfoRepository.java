@@ -40,4 +40,13 @@ public interface SimInfoRepository {
      * @return 影响行数
      */
     int update(SimInfo simInfo);
+
+    /**
+     * Upsert语义：ICCID不存在则插入，已存在则更新
+     * <p>
+     * 允许覆盖 IMSI/MSISDN/source_* 字段
+     *
+     * @param simInfo SIM信息
+     */
+    void upsertSimInfo(SimInfo simInfo);
 }
