@@ -49,8 +49,10 @@ public class ManualSimServiceImpl implements ManualSimService {
         normalizedSim.setDataStatus(true);
         normalizedSim.setVoiceStatus(true);
 
-        // 设置来源
-        normalizedSim.setSourceMno(MnoType.UNKNOWN.getCode());
+        // 设置来源运营商（保留前端传入的值，如果为空则设为UNKNOWN）
+        if (normalizedSim.getSourceMno() == null || normalizedSim.getSourceMno().isEmpty()) {
+            normalizedSim.setSourceMno(MnoType.UNKNOWN.getCode());
+        }
         if (normalizedSim.getSourceType() == null) {
             normalizedSim.setSourceType("manual_save");
         }

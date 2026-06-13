@@ -51,8 +51,8 @@ class ManualSimServiceImplTest {
     // ========== saveSimInfo ==========
 
     @Test
-    @DisplayName("保存SIM - 新ICCID保存成功")
-    void saveSimInfo_success() {
+    @DisplayName("保存SIM - 新ICCID保存成功（无运营商默认UNKNOWN）")
+    void saveSimInfo_success_defaultUnknown() {
         SimInfo input = SimInfo.builder()
                 .iccid("89860123456789012345")
                 .imsi("460001234567890")
@@ -74,6 +74,36 @@ class ManualSimServiceImplTest {
                         && Boolean.TRUE.equals(saved.getDataStatus())
                         && Boolean.TRUE.equals(saved.getVoiceStatus())
                         && "UNKNOWN".equals(saved.getSourceMno())
+                        && "manual_save".equals(saved.getSourceType())
+        ));
+    }
+
+    @Test
+    @DisplayName("保存SIM - 新ICCID保存成功（保留前端传入的运营商）")
+    void saveSimInfo_success_keepMnoType() {
+        SimInfo input = SimInfo.builder()
+                .iccid("89860123456789012345")
+                .imsi("460001234567890")
+                .msisdn("13800138000")
+                .sourceMno("CMCC")
+                .build();
+
+        SimInfo normalized = buildNormalizedSim("89860123456789012345");
+        normalized.setSourceMno("CMCC");
+
+        when(simNormalizationService.normalize(input)).thenReturn(normalized);
+        when(simInfoRepository.existsByIccid("89860123456789012345")).thenReturn(false);
+
+        manualSimService.saveSimInfo(input);
+
+        verify(simInfoRepository).save(argThat(saved ->
+                saved.getSimStatus() == 1
+                        && saved.getBindingStatus() == 0
+                        && saved.getRealnameStatus() == 1
+                        && Boolean.TRUE.equals(saved.getSmsStatus())
+                        && Boolean.TRUE.equals(saved.getDataStatus())
+                        && Boolean.TRUE.equals(saved.getVoiceStatus())
+                        && "CMCC".equals(saved.getSourceMno())
                         && "manual_save".equals(saved.getSourceType())
         ));
     }
