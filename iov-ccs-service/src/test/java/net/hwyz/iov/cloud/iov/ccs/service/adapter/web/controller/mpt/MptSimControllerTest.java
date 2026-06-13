@@ -68,6 +68,119 @@ class MptSimControllerTest {
         assertNotNull(result);
     }
 
+    // ========== convertToSimInfo 格式校验 ==========
+
+    @Test
+    @DisplayName("保存SIM - ICCID过短拒绝")
+    void add_invalidIccid_tooShort() {
+        SimInfoRequest request = buildValidRequest();
+        request.setIccid("123");  // 不足19位
+
+        var result = controller.add(request);
+
+        assertNotNull(result);
+        verify(manualSimService, never()).saveSimInfo(any());
+    }
+
+    @Test
+    @DisplayName("保存SIM - ICCID含字母拒绝")
+    void add_invalidIccid_hasLetter() {
+        SimInfoRequest request = buildValidRequest();
+        request.setIccid("898601234567890ABCDE");  // 含字母
+
+        var result = controller.add(request);
+
+        assertNotNull(result);
+        verify(manualSimService, never()).saveSimInfo(any());
+    }
+
+    @Test
+    @DisplayName("保存SIM - IMSI位数不足拒绝")
+    void add_invalidImsi_tooShort() {
+        SimInfoRequest request = buildValidRequest();
+        request.setImsi("4600012345");  // 只有10位
+
+        var result = controller.add(request);
+
+        assertNotNull(result);
+        verify(manualSimService, never()).saveSimInfo(any());
+    }
+
+    @Test
+    @DisplayName("保存SIM - IMSI含字母拒绝")
+    void add_invalidImsi_hasLetter() {
+        SimInfoRequest request = buildValidRequest();
+        request.setImsi("4600012345ABCDE");  // 含字母
+
+        var result = controller.add(request);
+
+        assertNotNull(result);
+        verify(manualSimService, never()).saveSimInfo(any());
+    }
+
+    @Test
+    @DisplayName("保存SIM - MSISDN非手机号格式拒绝")
+    void add_invalidMsisdn_notPhone() {
+        SimInfoRequest request = buildValidRequest();
+        request.setMsisdn("02112345678");  // 座机号
+
+        var result = controller.add(request);
+
+        assertNotNull(result);
+        verify(manualSimService, never()).saveSimInfo(any());
+    }
+
+    @Test
+    @DisplayName("保存SIM - MSISDN位数不足拒绝")
+    void add_invalidMsisdn_tooShort() {
+        SimInfoRequest request = buildValidRequest();
+        request.setMsisdn("1380013");  // 不足11位
+
+        var result = controller.add(request);
+
+        assertNotNull(result);
+        verify(manualSimService, never()).saveSimInfo(any());
+    }
+
+    @Test
+    @DisplayName("保存SIM - MSISDN带86前缀通过")
+    void add_validMsisdn_with86Prefix() {
+        SimInfoRequest request = buildValidRequest();
+        request.setMsisdn("8613800138000");
+
+        var result = controller.add(request);
+
+        assertNotNull(result);
+        verify(manualSimService).saveSimInfo(any());
+    }
+
+    @Test
+    @DisplayName("更新SIM - ICCID格式不正确拒绝")
+    void update_invalidIccid() {
+        SimInfoRequest request = buildValidRequest();
+        request.setIccid("short");
+
+        var result = controller.update("short", request);
+
+        assertNotNull(result);
+        verify(manualSimService, never()).updateSimInfo(any(), any());
+    }
+
+    @Test
+    @DisplayName("批量保存 - 含非法格式不调用Service")
+    void batchAdd_invalidFormat() {
+        SimInfoRequest request = buildValidRequest();
+        request.setImsi("invalid");
+
+        BatchSimInfoRequest batchRequest = new BatchSimInfoRequest();
+        batchRequest.setSimList(List.of(request));
+
+        var result = controller.batchAdd(batchRequest);
+
+        assertNotNull(result);
+        verify(manualSimService, never()).batchSaveSimInfo(any());
+    }
+
     // ========== POST /api/mpt/simInfo/v1/batch ==========
 
     @Test
