@@ -6,6 +6,7 @@ import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.SimInfo;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.VehicleSim;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.repository.SimInfoRepository;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.repository.VehicleSimRepository;
+import net.hwyz.iov.cloud.iov.ccs.service.domain.service.CardStatusEventPublisher;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.LockService;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.metrics.CcsMetricsService;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,9 @@ class CardBindingServiceImplTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private CardStatusEventPublisher cardStatusEventPublisher;
 
     @Mock
     private CcsMetricsService metricsService;

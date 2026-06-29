@@ -159,4 +159,36 @@ public interface CcsMetricsService {
      * @param count 补绑数量
      */
     void recordVmdReconciliationRebind(int count);
+
+    // ==================== 事件发布指标 ====================
+
+    /**
+     * 记录事件写入 outbox 成功
+     */
+    void recordEventOutboxSaved();
+
+    /**
+     * 记录事件序列化失败
+     */
+    void recordEventSerializeFail();
+
+    /**
+     * 记录事件发布成功
+     */
+    void recordEventPublished();
+
+    /**
+     * 记录事件发布失败
+     */
+    void recordEventPublishFail();
+
+    /**
+     * 记录事件发布失败超过最大重试次数
+     */
+    void recordEventPublishFailed();
+
+    /**
+     * 记录事件重试发布成功
+     */
+    void recordEventRetrySuccess();
 }

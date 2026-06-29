@@ -259,4 +259,60 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
                 .increment(count);
         log.debug("VMD对账补绑: {}", count);
     }
+
+    // ==================== 事件发布指标 ====================
+
+    @Override
+    public void recordEventOutboxSaved() {
+        Counter.builder("ccs.event.outbox.saved")
+                .description("事件写入outbox成功次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("事件写入outbox成功");
+    }
+
+    @Override
+    public void recordEventSerializeFail() {
+        Counter.builder("ccs.event.serialize.fail")
+                .description("事件序列化失败次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("事件序列化失败");
+    }
+
+    @Override
+    public void recordEventPublished() {
+        Counter.builder("ccs.event.published")
+                .description("事件发布成功次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("事件发布成功");
+    }
+
+    @Override
+    public void recordEventPublishFail() {
+        Counter.builder("ccs.event.publish.fail")
+                .description("事件发布失败次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("事件发布失败");
+    }
+
+    @Override
+    public void recordEventPublishFailed() {
+        Counter.builder("ccs.event.publish.failed")
+                .description("事件发布失败超过最大重试次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("事件发布失败超过最大重试次数");
+    }
+
+    @Override
+    public void recordEventRetrySuccess() {
+        Counter.builder("ccs.event.retry.success")
+                .description("事件重试发布成功次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("事件重试发布成功");
+    }
 }

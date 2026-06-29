@@ -112,6 +112,16 @@ public class BusinessAlertEvent {
         /**
          * VMD对账差异超阈值
          */
-        VMD_RECONCILIATION_DIFF_THRESHOLD
+        VMD_RECONCILIATION_DIFF_THRESHOLD,
+
+        /**
+         * 事件序列化失败
+         */
+        EVENT_SERIALIZE_FAIL,
+
+        /**
+         * 事件发布失败（超过最大重试次数）
+         */
+        EVENT_PUBLISH_FAIL
     }
 }

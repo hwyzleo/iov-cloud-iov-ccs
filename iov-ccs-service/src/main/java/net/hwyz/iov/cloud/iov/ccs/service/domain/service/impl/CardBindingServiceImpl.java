@@ -3,12 +3,14 @@ package net.hwyz.iov.cloud.iov.ccs.service.domain.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.event.BusinessAlertEvent;
+import net.hwyz.iov.cloud.iov.ccs.service.domain.event.CardBindingStatusEvent;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.event.VmdBindingEvent;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.SimInfo;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.VehicleSim;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.repository.SimInfoRepository;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.repository.VehicleSimRepository;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.CardBindingService;
+import net.hwyz.iov.cloud.iov.ccs.service.domain.service.CardStatusEventPublisher;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.LockService;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.metrics.CcsMetricsService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -36,6 +38,7 @@ public class CardBindingServiceImpl implements CardBindingService {
     private final VehicleSimRepository vehicleSimRepository;
     private final LockService lockService;
     private final ApplicationEventPublisher eventPublisher;
+    private final CardStatusEventPublisher cardStatusEventPublisher;
     private final CcsMetricsService metricsService;
 
     @Override
@@ -144,6 +147,17 @@ public class CardBindingServiceImpl implements CardBindingService {
                         .boundTime(LocalDateTime.now())
                         .build();
                 vehicleSimRepository.upsert(vehicleSim);
+
+                // 发布车卡绑定状态变更事件（通过 outbox 保证至少一次投递）
+                cardStatusEventPublisher.publishBindingStatus(CardBindingStatusEvent.builder()
+                        .vin(vin)
+                        .iccid(iccid)
+                        .cardSlot(cardSlot)
+                        .bindingStatus(BOUND)
+                        .sourceSeq(seq)
+                        .sourceEventId(bindingId)
+                        .occurredAt(LocalDateTime.now())
+                        .build());
 
                 metricsService.recordVmdBindingSuccess();
                 log.info("车卡绑定成功: vin={}, iccid={}, cardSlot={}", vin, iccid, cardSlot);
