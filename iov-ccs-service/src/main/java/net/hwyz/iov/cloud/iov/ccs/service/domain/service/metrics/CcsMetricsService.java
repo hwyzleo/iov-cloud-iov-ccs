@@ -109,4 +109,54 @@ public interface CcsMetricsService {
      * @param count   数据条数
      */
     void recordManualSyncData(boolean success, int count);
+
+    // ==================== 车卡绑定指标 ====================
+
+    /**
+     * 记录VMD绑定成功
+     */
+    void recordVmdBindingSuccess();
+
+    /**
+     * 记录VMD绑定：ICCID未命中
+     */
+    void recordVmdBindingIccidNotFound();
+
+    /**
+     * 记录VMD绑定：运营商调用失败
+     */
+    void recordVmdBindingMnoFail();
+
+    /**
+     * 记录VMD绑定：获取锁失败
+     */
+    void recordVmdBindingLockFail();
+
+    /**
+     * 记录VMD对账补齐数量
+     *
+     * @param count 补齐数量
+     */
+    void recordVmdReconciliationCatchUp(int count);
+
+    /**
+     * 记录VMD对账告警数量
+     *
+     * @param count 告警数量
+     */
+    void recordVmdReconciliationAlert(int count);
+
+    /**
+     * 记录VMD对账差异数量
+     *
+     * @param count 差异数量
+     */
+    void recordVmdReconciliationDiff(int count);
+
+    /**
+     * 记录VMD对账补绑数量
+     *
+     * @param count 补绑数量
+     */
+    void recordVmdReconciliationRebind(int count);
 }

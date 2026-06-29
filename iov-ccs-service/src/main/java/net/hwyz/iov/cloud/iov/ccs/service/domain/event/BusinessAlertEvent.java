@@ -87,6 +87,31 @@ public class BusinessAlertEvent {
         /**
          * CUCC重放攻击
          */
-        CUCC_REPLAY_ATTACK
+        CUCC_REPLAY_ATTACK,
+
+        /**
+         * VMD绑定：ICCID不在SIM信息表中
+         */
+        VMD_BINDING_ICCID_NOT_FOUND,
+
+        /**
+         * VMD绑定：运营商车卡绑定失败
+         */
+        VMD_BINDING_MNO_FAIL,
+
+        /**
+         * VMD绑定：获取分布式锁失败
+         */
+        VMD_BINDING_LOCK_FAIL,
+
+        /**
+         * VMD对账失败
+         */
+        VMD_RECONCILIATION_FAIL,
+
+        /**
+         * VMD对账差异超阈值
+         */
+        VMD_RECONCILIATION_DIFF_THRESHOLD
     }
 }

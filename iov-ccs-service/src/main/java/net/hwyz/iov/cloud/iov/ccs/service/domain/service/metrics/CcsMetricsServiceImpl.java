@@ -185,4 +185,78 @@ public class CcsMetricsServiceImpl implements CcsMetricsService {
 
         log.debug("手动同步数据: success={}, count={}", success, count);
     }
+
+    // ==================== 车卡绑定指标 ====================
+
+    @Override
+    public void recordVmdBindingSuccess() {
+        Counter.builder("ccs.vmd.binding.success")
+                .description("VMD绑定成功次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("VMD绑定成功");
+    }
+
+    @Override
+    public void recordVmdBindingIccidNotFound() {
+        Counter.builder("ccs.vmd.binding.iccid.not.found")
+                .description("VMD绑定ICCID未命中次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("VMD绑定ICCID未命中");
+    }
+
+    @Override
+    public void recordVmdBindingMnoFail() {
+        Counter.builder("ccs.vmd.binding.mno.fail")
+                .description("VMD绑定运营商调用失败次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("VMD绑定运营商调用失败");
+    }
+
+    @Override
+    public void recordVmdBindingLockFail() {
+        Counter.builder("ccs.vmd.binding.lock.fail")
+                .description("VMD绑定获取锁失败次数")
+                .register(meterRegistry)
+                .increment();
+        log.debug("VMD绑定获取锁失败");
+    }
+
+    @Override
+    public void recordVmdReconciliationCatchUp(int count) {
+        Counter.builder("ccs.vmd.reconciliation.catch.up")
+                .description("VMD对账补齐数量")
+                .register(meterRegistry)
+                .increment(count);
+        log.debug("VMD对账补齐: {}", count);
+    }
+
+    @Override
+    public void recordVmdReconciliationAlert(int count) {
+        Counter.builder("ccs.vmd.reconciliation.alert")
+                .description("VMD对账告警数量")
+                .register(meterRegistry)
+                .increment(count);
+        log.debug("VMD对账告警: {}", count);
+    }
+
+    @Override
+    public void recordVmdReconciliationDiff(int count) {
+        Counter.builder("ccs.vmd.reconciliation.diff")
+                .description("VMD对账差异数量")
+                .register(meterRegistry)
+                .increment(count);
+        log.debug("VMD对账差异: {}", count);
+    }
+
+    @Override
+    public void recordVmdReconciliationRebind(int count) {
+        Counter.builder("ccs.vmd.reconciliation.rebind")
+                .description("VMD对账补绑数量")
+                .register(meterRegistry)
+                .increment(count);
+        log.debug("VMD对账补绑: {}", count);
+    }
 }
