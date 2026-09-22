@@ -31,7 +31,7 @@ public class CcsKafkaTopicDefinitionProvider implements KafkaTopicDefinitionProv
 
     public CcsKafkaTopicDefinitionProvider(
             CcsKafkaTopicProvisioningProperties properties,
-            @Value("${kafka.topic.sim-status:sim-status-changed}") String simStatusTopic,
+            @Value("${kafka.topic.sim-status:ccs-sim-status-changed}") String simStatusTopic,
             @Value("${kafka.topic.card-binding-status:card-binding-status-changed}") String cardBindingStatusTopic) {
         this.properties = properties;
         this.simStatusTopic = simStatusTopic;

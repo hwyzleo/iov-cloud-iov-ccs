@@ -52,7 +52,7 @@ public class CardStatusEventPublisherImpl implements CardStatusEventPublisher {
     @Value("${kafka.topic.card-binding-status:card-binding-status-changed}")
     private String cardBindingStatusTopic;
 
-    @Value("${kafka.topic.sim-status:sim-status-changed}")
+    @Value("${kafka.topic.sim-status:ccs-sim-status-changed}")
     private String simStatusTopic;
 
     @Override
