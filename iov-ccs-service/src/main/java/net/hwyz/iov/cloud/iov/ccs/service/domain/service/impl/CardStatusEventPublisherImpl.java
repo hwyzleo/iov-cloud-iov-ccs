@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.hwyz.iov.cloud.framework.kafka.topic.KafkaTopicProvisioningStatus;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.event.BusinessAlertEvent;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.event.CardBindingStatusEvent;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.event.SimStatusChangeEvent;
@@ -11,13 +12,16 @@ import net.hwyz.iov.cloud.iov.ccs.service.domain.model.entity.OutboxEvent;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.repository.OutboxEventRepository;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.CardStatusEventPublisher;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.metrics.CcsMetricsService;
-import org.springframework.beans.factory.annotation.Value;
+import net.hwyz.iov.cloud.iov.ccs.service.infrastructure.config.CcsKafkaTopicProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -43,17 +47,25 @@ public class CardStatusEventPublisherImpl implements CardStatusEventPublisher {
     private static final int DEFAULT_MAX_RETRY = 3;
     private static final int BATCH_SIZE = 100;
 
+    private static final Duration READINESS_WARN_THROTTLE = Duration.ofMinutes(1);
+
     private final OutboxEventRepository outboxEventRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final CcsMetricsService metricsService;
 
-    @Value("${kafka.topic.card-binding-status:card-binding-status-changed}")
-    private String cardBindingStatusTopic;
+    /**
+     * Kafka Topic 单一配置入口（IOV-CCS-DSN-CR-003）：Topic 名称统一来自标准配置
+     */
+    private final CcsKafkaTopicProperties topicProperties;
 
-    @Value("${kafka.topic.sim-status:ccs-sim-status-changed}")
-    private String simStatusTopic;
+    /**
+     * Topic Provisioning 状态（框架 Bean），用于事件发布通道就绪门禁
+     */
+    private final ObjectProvider<KafkaTopicProvisioningStatus> provisioningStatus;
+
+    private volatile Instant lastReadinessWarnAt;
 
     @Override
     @Transactional
@@ -66,7 +78,7 @@ public class CardStatusEventPublisherImpl implements CardStatusEventPublisher {
                     .aggregateId(event.getVin())
                     .payload(payload)
                     .status(STATUS_PENDING)
-                    .topic(cardBindingStatusTopic)
+                    .topic(topicProperties.getVehicleSimBindingStatusChanged().getName())
                     .messageKey(event.getVin())
                     .retryCount(0)
                     .maxRetry(DEFAULT_MAX_RETRY)
@@ -104,7 +116,7 @@ public class CardStatusEventPublisherImpl implements CardStatusEventPublisher {
                     .aggregateId(event.getIccid())
                     .payload(payload)
                     .status(STATUS_PENDING)
-                    .topic(simStatusTopic)
+                    .topic(topicProperties.getSimStatusChanged().getName())
                     .messageKey(event.getVin())
                     .retryCount(0)
                     .maxRetry(DEFAULT_MAX_RETRY)
@@ -134,6 +146,9 @@ public class CardStatusEventPublisherImpl implements CardStatusEventPublisher {
     @Scheduled(fixedDelay = 5000)
     @Transactional
     public int publishPendingEvents() {
+        if (!isPublishingAllowed()) {
+            return 0;
+        }
         List<OutboxEvent> pendingEvents = outboxEventRepository.listPending(BATCH_SIZE);
         int successCount = 0;
 
@@ -167,6 +182,9 @@ public class CardStatusEventPublisherImpl implements CardStatusEventPublisher {
     @Scheduled(fixedDelay = 30000)
     @Transactional
     public int retryFailedEvents() {
+        if (!isPublishingAllowed()) {
+            return 0;
+        }
         List<OutboxEvent> retryableEvents = outboxEventRepository.listRetryable(BATCH_SIZE);
         int successCount = 0;
 
@@ -194,6 +212,29 @@ public class CardStatusEventPublisherImpl implements CardStatusEventPublisher {
         }
 
         return successCount;
+    }
+
+    /**
+     * 事件发布通道就绪门禁（IOV-CCS-DSN-CR-003）。
+     * <p>
+     * Topic Provisioning 就绪前不启动发布：避免 Topic 缺失窗口内（Broker 不可用 / 初始化失败）
+     * 把 PENDING 事件误判为发布失败并累计重试次数；未启用 Provisioning 时不额外门禁。
+     */
+    private boolean isPublishingAllowed() {
+        KafkaTopicProvisioningStatus status = provisioningStatus.getIfAvailable();
+        if (status == null) {
+            return true;
+        }
+        if (status.state() == KafkaTopicProvisioningStatus.State.READY) {
+            return true;
+        }
+        Instant now = Instant.now();
+        if (lastReadinessWarnAt == null || now.isAfter(lastReadinessWarnAt.plus(READINESS_WARN_THROTTLE))) {
+            lastReadinessWarnAt = now;
+            log.warn("Kafka Topic 未就绪（missingTopics={}），事件发布通道暂不启动，事件保持 PENDING 待重试",
+                    status.missingTopics());
+        }
+        return false;
     }
 
     /**
