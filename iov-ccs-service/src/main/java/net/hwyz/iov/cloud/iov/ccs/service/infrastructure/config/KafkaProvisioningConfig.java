@@ -5,6 +5,9 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
+import java.util.concurrent.Executor;
 
 /**
  * CCS Kafka 基础设施配置
@@ -26,5 +29,26 @@ public class KafkaProvisioningConfig {
     @Bean(destroyMethod = "close")
     public Admin kafkaAdminClient(KafkaProperties properties) {
         return AdminClient.create(properties.buildAdminProperties());
+    }
+
+    /**
+     * Kafka Topic 审计专用线程池
+     * <p>
+     * KafkaTopicsReadyEvent 由 KafkaFuture 完成回调在 AdminClient 自身线程上发布，
+     * 若审计（describeTopics 同步等待）直接在监听线程执行，会阻塞 AdminClient 线程导致
+     * 自锁超时，且超时分支置中断标志会造成 NIO Selector 永久 busy-loop（100% CPU）。
+     * 审计必须脱离 AdminClient 线程独立执行。
+     * <p>
+     * 注意：不要在 @Bean 方法内手动调用 {@code initialize()}（ThreadPoolTaskExecutor 是
+     * InitializingBean，Spring 会自动调用 afterPropertiesSet），避免双重创建线程池。
+     */
+    @Bean(name = "kafkaAuditExecutor")
+    public Executor kafkaAuditExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(2);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("kafka-audit-");
+        return executor;
     }
 }

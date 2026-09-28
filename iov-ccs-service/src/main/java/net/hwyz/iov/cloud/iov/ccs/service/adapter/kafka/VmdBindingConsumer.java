@@ -37,7 +37,7 @@ public class VmdBindingConsumer {
      * @param acknowledgment 确认
      */
     @KafkaListener(
-            topics = "${kafka.topic.vmd-binding:vmd.vehcile-part-binding.changed}",
+            topics = "${kafka.topic.vmd-binding:vmd.vehicle-part-binding.changed}",
             groupId = "${kafka.group-id.ccs-vmd-binding:iov-ccs-vmd-binding}",
             containerFactory = "kafkaListenerContainerFactory"
     )

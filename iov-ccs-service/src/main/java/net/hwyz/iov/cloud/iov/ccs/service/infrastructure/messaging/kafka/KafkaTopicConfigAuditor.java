@@ -15,6 +15,7 @@ import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -53,7 +54,13 @@ public class KafkaTopicConfigAuditor {
 
     /**
      * Topic Provisioning 首次就绪后触发审计。
+     * <p>
+     * 注意：KafkaTopicsReadyEvent 由 KafkaFuture 完成回调发布，同步监听会阻塞在
+     * AdminClient 自身线程（adminclient-*）上，此时再调用 admin.describeTopics(...)
+     * 将因线程自锁必然超时；且超时分支对线程置中断标志会导致该线程 NIO Selector
+     * 永久空转（100% CPU busy-loop）。因此本监听必须异步执行，不得占用 AdminClient 线程。
      */
+    @Async("kafkaAuditExecutor")
     @EventListener
     public void onTopicsReady(KafkaTopicsReadyEvent event) {
         AuditResult result = audit();
@@ -93,9 +100,13 @@ public class KafkaTopicConfigAuditor {
                     } else {
                         warnings.add("读取 Topic 元数据失败，topic=" + name + "，error=" + causeMessage(e));
                     }
-                } catch (TimeoutException | InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                } catch (TimeoutException e) {
+                    // 注意：不能对当前线程置中断标志。若本方法运行在 AdminClient 线程上（见 onTopicsReady 注释），
+                    // 置中断会导致 NIO Selector.select 永久立即返回，该线程 100% CPU busy-loop。
                     warnings.add("读取 Topic 元数据超时，topic=" + name);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    warnings.add("读取 Topic 元数据被中断，topic=" + name);
                 }
             }
             diffs.addAll(auditConfigs(byName, warnings));
@@ -151,9 +162,11 @@ public class KafkaTopicConfigAuditor {
                     });
                 } catch (ExecutionException e) {
                     warnings.add("读取 Topic 配置失败，topic=" + resource.name() + "，error=" + causeMessage(e));
-                } catch (TimeoutException | InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                } catch (TimeoutException e) {
                     warnings.add("读取 Topic 配置超时，topic=" + resource.name());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    warnings.add("读取 Topic 配置被中断，topic=" + resource.name());
                 }
             }
         } catch (Exception e) {

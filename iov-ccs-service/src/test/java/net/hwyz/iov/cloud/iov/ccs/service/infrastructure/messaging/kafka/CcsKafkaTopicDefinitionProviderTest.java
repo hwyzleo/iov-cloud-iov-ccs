@@ -75,7 +75,7 @@ class CcsKafkaTopicDefinitionProviderTest {
         @DisplayName("不声明 CCS 仅消费的 topic")
         void doesNotDeclareConsumerOnlyTopics() {
             Set<String> topics = declaredTopics();
-            assertFalse(topics.contains("vmd.vehcile-part-binding.changed"));
+            assertFalse(topics.contains("vmd.vehicle-part-binding.changed"));
         }
 
         @Test
