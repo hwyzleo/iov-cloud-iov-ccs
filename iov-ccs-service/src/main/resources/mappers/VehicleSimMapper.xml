@@ -61,4 +61,47 @@
         FROM tb_vehicle_sim t
         ORDER BY t.id ASC
     </select>
+
+    <!-- 插入 -->
+    <insert id="insertPo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_vehicle_sim (
+            vin, iccid, card_slot, binding_status, package_type, tbox_sn,
+            source_event_id, source_seq, bound_time
+        )
+        VALUES (
+            #{vin}, #{iccid}, #{cardSlot}, #{bindingStatus}, #{packageType}, #{tboxSn},
+            #{sourceEventId}, #{sourceSeq}, #{boundTime}
+        )
+    </insert>
+
+    <!-- 更新 -->
+    <update id="updatePo" parameterType="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.VehicleSimPo">
+        UPDATE tb_vehicle_sim t SET
+        <if test="vin != null and vin != ''">
+            t.vin = #{vin},
+        </if>
+        <if test="cardSlot != null">
+            t.card_slot = #{cardSlot},
+        </if>
+        <if test="bindingStatus != null">
+            t.binding_status = #{bindingStatus},
+        </if>
+        <if test="packageType != null and packageType != ''">
+            t.package_type = #{packageType},
+        </if>
+        <if test="tboxSn != null and tboxSn != ''">
+            t.tbox_sn = #{tboxSn},
+        </if>
+        <if test="sourceEventId != null and sourceEventId != ''">
+            t.source_event_id = #{sourceEventId},
+        </if>
+        <if test="sourceSeq != null">
+            t.source_seq = #{sourceSeq},
+        </if>
+        <if test="boundTime != null">
+            t.bound_time = #{boundTime},
+        </if>
+        t.updated_time = now()
+        WHERE t.id = #{id}
+    </update>
 </mapper>

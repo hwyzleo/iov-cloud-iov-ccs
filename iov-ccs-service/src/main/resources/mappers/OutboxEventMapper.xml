@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.mapper.OutboxEventMapper">
+
+    <!-- 插入 -->
+    <insert id="insertPo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tb_outbox_event (
+            event_type, aggregate_id, payload, status, topic, message_key,
+            retry_count, max_retry, failure_reason, created_time, published_time
+        )
+        VALUES (
+            #{eventType}, #{aggregateId}, #{payload}, #{status}, #{topic}, #{messageKey},
+            IFNULL(#{retryCount}, 0), IFNULL(#{maxRetry}, 3), #{failureReason}, #{createdTime}, #{publishedTime}
+        )
+    </insert>
+
+    <!-- 更新 -->
+    <update id="updatePo" parameterType="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.OutboxEventPo">
+        UPDATE tb_outbox_event t SET
+        <if test="eventType != null and eventType != ''">
+            t.event_type = #{eventType},
+        </if>
+        <if test="aggregateId != null and aggregateId != ''">
+            t.aggregate_id = #{aggregateId},
+        </if>
+        <if test="payload != null and payload != ''">
+            t.payload = #{payload},
+        </if>
+        <if test="status != null and status != ''">
+            t.status = #{status},
+        </if>
+        <if test="topic != null and topic != ''">
+            t.topic = #{topic},
+        </if>
+        <if test="messageKey != null and messageKey != ''">
+            t.message_key = #{messageKey},
+        </if>
+        <if test="retryCount != null">
+            t.retry_count = #{retryCount},
+        </if>
+        <if test="maxRetry != null">
+            t.max_retry = #{maxRetry},
+        </if>
+        <if test="failureReason != null and failureReason != ''">
+            t.failure_reason = #{failureReason},
+        </if>
+        <if test="publishedTime != null">
+            t.published_time = #{publishedTime},
+        </if>
+        t.updated_time = now()
+        WHERE t.id = #{id}
+    </update>
+
+</mapper>
