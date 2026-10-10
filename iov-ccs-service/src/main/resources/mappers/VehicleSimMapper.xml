@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.mapper.VehicleSimMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="baseResultMap" type="net.hwyz.iov.cloud.iov.ccs.service.infrastructure.persistence.po.VehicleSimPo">
+        <id column="id" property="id" />
+        <result column="vin" property="vin" />
+        <result column="iccid" property="iccid" />
+        <result column="card_slot" property="cardSlot" />
+        <result column="binding_status" property="bindingStatus" />
+        <result column="package_type" property="packageType" />
+        <result column="tbox_sn" property="tboxSn" />
+        <result column="source_event_id" property="sourceEventId" />
+        <result column="source_seq" property="sourceSeq" />
+        <result column="bound_time" property="boundTime" />
+        <result column="created_time" property="createdTime" />
+        <result column="updated_time" property="updatedTime" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="baseColumnList">
+        id, vin, iccid, card_slot, binding_status, package_type, tbox_sn,
+        source_event_id, source_seq, bound_time, created_time, updated_time
+    </sql>
+
+    <!-- 根据ICCID查询车卡关联 -->
+    <select id="selectByIccid" parameterType="String" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_vehicle_sim t
+        WHERE t.iccid = #{iccid}
+        LIMIT 1
+    </select>
+
+    <!-- 根据VIN查询车卡关联列表（一车双卡） -->
+    <select id="selectByVin" parameterType="String" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_vehicle_sim t
+        WHERE t.vin = #{vin}
+        ORDER BY t.card_slot ASC
+    </select>
+
+    <!-- 根据ICCID判断是否存在 -->
+    <select id="existsByIccid" parameterType="String" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM tb_vehicle_sim t
+        WHERE t.iccid = #{iccid}
+    </select>
+
+    <!-- 根据绑定状态查询列表 -->
+    <select id="selectByBindingStatus" parameterType="Integer" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_vehicle_sim t
+        WHERE t.binding_status = #{bindingStatus}
+        ORDER BY t.id DESC
+    </select>
+
+    <!-- 查询所有车卡关联（用于对账） -->
+    <select id="selectAll" resultMap="baseResultMap">
+        SELECT <include refid="baseColumnList"/>
+        FROM tb_vehicle_sim t
+        ORDER BY t.id ASC
+    </select>
+</mapper>
