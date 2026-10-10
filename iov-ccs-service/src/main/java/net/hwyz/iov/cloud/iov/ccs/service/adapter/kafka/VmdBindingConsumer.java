@@ -6,7 +6,6 @@ import net.hwyz.iov.cloud.iov.ccs.service.domain.event.VmdBindingEvent;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.CardBindingService;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -32,16 +31,18 @@ public class VmdBindingConsumer {
 
     /**
      * 消费VMD绑定事件
+     * <p>
+     * 采用默认 BATCH 自动提交（与平台其它服务一致），依赖业务侧幂等消费
+     * （bindingId+changeType 幂等、按 seq 处理乱序），不需要手动确认。
      *
-     * @param record        Kafka消息
-     * @param acknowledgment 确认
+     * @param record Kafka消息
      */
     @KafkaListener(
             topics = "${kafka.topic.vmd-binding:vmd.vehicle-part-binding.changed}",
             groupId = "${kafka.group-id.ccs-vmd-binding:iov-ccs-vmd-binding}",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    public void onMessage(ConsumerRecord<String, String> record, Acknowledgment acknowledgment) {
+    public void onMessage(ConsumerRecord<String, String> record) {
         log.info("收到VMD绑定事件: topic={}, partition={}, offset={}, key={}, value={}",
                 record.topic(), record.partition(), record.offset(), record.key(), record.value());
 
@@ -52,22 +53,18 @@ public class VmdBindingConsumer {
             // 按part_type=TBOX过滤
             if (!isTboxEvent(event)) {
                 log.debug("非TBOX事件，跳过: bindingId={}", event.getBindingId());
-                acknowledgment.acknowledge();
                 return;
             }
 
             // 处理绑定事件
             cardBindingService.handleBindingEvent(event);
 
-            // 确认消费
-            acknowledgment.acknowledge();
             log.info("VMD绑定事件处理完成: bindingId={}, vin={}", event.getBindingId(), event.getVin());
 
         } catch (Exception e) {
             log.error("VMD绑定事件处理失败: offset={}", record.offset(), e);
             // TODO: 实现重试逻辑和死信队列
-            // 消费失败进退避重试，超限入DLQ + 告警
-            acknowledgment.acknowledge();
+            // 失败不抛出，依赖自动提交继续消费；重试/DLQ 落地后再决定是否改为失败不提交
         }
     }
 
