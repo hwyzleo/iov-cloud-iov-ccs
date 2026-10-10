@@ -31,6 +31,11 @@ public class VmdBindingEvent {
     private String changeType;
 
     /**
+     * 设备类别：TBOX/DCU/CCU等（TBOX事件才处理）
+     */
+    private String deviceCategory;
+
+    /**
      * VIN
      */
     private String vin;

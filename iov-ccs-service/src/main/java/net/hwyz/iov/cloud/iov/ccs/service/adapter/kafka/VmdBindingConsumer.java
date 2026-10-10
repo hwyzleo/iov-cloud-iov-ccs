@@ -1,5 +1,7 @@
 package net.hwyz.iov.cloud.iov.ccs.service.adapter.kafka;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.event.VmdBindingEvent;
@@ -9,12 +11,12 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
 
 /**
  * VMD绑定事件消费者
  * <p>
- * 订阅VMD VehiclePartBindingChangedEvent，按part_type=TBOX过滤
+ * 订阅VMD VehiclePartBindingChangedEvent，按deviceCategory=TBOX过滤
  * 消费组独立，Key=VIN保证同车有序
  *
  * @author hwyz_leo
@@ -24,10 +26,10 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public class VmdBindingConsumer {
 
-    private static final String PART_TYPE_TBOX = "TBOX";
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final String DEVICE_CATEGORY_TBOX = "TBOX";
 
     private final CardBindingService cardBindingService;
+    private final ObjectMapper objectMapper;
 
     /**
      * 消费VMD绑定事件
@@ -50,9 +52,10 @@ public class VmdBindingConsumer {
             // 解析事件
             VmdBindingEvent event = parseEvent(record.value());
 
-            // 按part_type=TBOX过滤
+            // 按deviceCategory=TBOX过滤
             if (!isTboxEvent(event)) {
-                log.debug("非TBOX事件，跳过: bindingId={}", event.getBindingId());
+                log.debug("非TBOX事件，跳过: bindingId={}, deviceCategory={}",
+                        event.getBindingId(), event.getDeviceCategory());
                 return;
             }
 
@@ -69,30 +72,33 @@ public class VmdBindingConsumer {
     }
 
     /**
-     * 解析事件JSON
+     * 解析事件JSON并映射为领域事件
      */
     private VmdBindingEvent parseEvent(String json) {
-        // TODO: 实现真实的JSON解析
-        // Mock实现
-        return VmdBindingEvent.builder()
-                .bindingId("mock-binding-id")
-                .changeType("BIND")
-                .vin("mock-vin")
-                .tboxSn("mock-tbox-sn")
-                .iccid1("mock-iccid1")
-                .iccid2(null)
-                .seq(1L)
-                .occurredAt(LocalDateTime.now())
-                .originalEventId("mock-event-id")
-                .build();
+        try {
+            VmdPartBindingChangedMessage message = objectMapper.readValue(json, VmdPartBindingChangedMessage.class);
+            return VmdBindingEvent.builder()
+                    .bindingId(message.getBindingId() != null ? String.valueOf(message.getBindingId()) : null)
+                    .changeType(message.getChangeType())
+                    .vin(message.getVin())
+                    .tboxSn(message.getSn())
+                    .deviceCategory(message.getDeviceCategory())
+                    .iccid1(message.getIccid1())
+                    .iccid2(message.getIccid2())
+                    .seq(message.getSeq())
+                    .occurredAt(message.getOccurredAt() != null
+                            ? LocalDateTime.ofInstant(message.getOccurredAt(), ZoneId.systemDefault())
+                            : null)
+                    .build();
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("VMD绑定事件JSON解析失败: " + json, e);
+        }
     }
 
     /**
      * 判断是否为TBOX事件
      */
     private boolean isTboxEvent(VmdBindingEvent event) {
-        // TODO: 实现真实的part_type判断
-        // Mock实现：默认为TBOX事件
-        return true;
+        return DEVICE_CATEGORY_TBOX.equals(event.getDeviceCategory());
     }
 }
