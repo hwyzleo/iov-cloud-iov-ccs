@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.event.VmdBindingEvent;
 import net.hwyz.iov.cloud.iov.ccs.service.domain.service.CardBindingService;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -23,13 +24,24 @@ import java.time.ZoneId;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class VmdBindingConsumer {
 
     private static final String DEVICE_CATEGORY_TBOX = "TBOX";
 
     private final CardBindingService cardBindingService;
     private final ObjectMapper objectMapper;
+    /**
+     * 业务墙上时间 ZoneId（复用 iov.web.jackson.zone-id，禁止 systemDefault 猜测业务语义）
+     */
+    private final ZoneId businessZoneId;
+
+    public VmdBindingConsumer(CardBindingService cardBindingService,
+                              ObjectMapper objectMapper,
+                              @Value("${iov.web.jackson.zone-id}") String businessZoneId) {
+        this.cardBindingService = cardBindingService;
+        this.objectMapper = objectMapper;
+        this.businessZoneId = ZoneId.of(businessZoneId);
+    }
 
     /**
      * 消费VMD绑定事件
@@ -87,7 +99,7 @@ public class VmdBindingConsumer {
                     .iccid2(message.getIccid2())
                     .seq(message.getSeq())
                     .occurredAt(message.getOccurredAt() != null
-                            ? LocalDateTime.ofInstant(message.getOccurredAt(), ZoneId.systemDefault())
+                            ? LocalDateTime.ofInstant(message.getOccurredAt(), businessZoneId)
                             : null)
                     .build();
         } catch (JsonProcessingException e) {

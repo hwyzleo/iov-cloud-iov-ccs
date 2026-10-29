@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.TimeZone;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -42,7 +43,8 @@ class VmdBindingConsumerTest {
         // 与Spring Boot默认ObjectMapper一致：注册JavaTimeModule以支持Instant解析
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-        consumer = new VmdBindingConsumer(cardBindingService, objectMapper);
+        // IOV-CCS-DSN-CR-004：显式业务 ZoneId（与 iov.web.jackson.zone-id 一致，禁止 systemDefault）
+        consumer = new VmdBindingConsumer(cardBindingService, objectMapper, "Asia/Shanghai");
     }
 
     static final String TBOX_EVENT_JSON = """
@@ -75,7 +77,7 @@ class VmdBindingConsumerTest {
         assertEquals("89860400000000000001", event.getIccid1());
         assertEquals("89860600000000000001", event.getIccid2());
         assertEquals(14000L, event.getSeq());
-        assertEquals(LocalDateTime.ofInstant(Instant.parse("2026-09-23T03:39:54Z"), ZoneId.systemDefault()),
+        assertEquals(LocalDateTime.ofInstant(Instant.parse("2026-09-23T03:39:54Z"), ZoneId.of("Asia/Shanghai")),
                 event.getOccurredAt());
     }
 
@@ -94,6 +96,33 @@ class VmdBindingConsumerTest {
     void onMessage_invalidJson_logsError() {
         assertDoesNotThrow(() -> consumer.onMessage(record("HWYZTEST900000001", "{not-json")));
         verify(cardBindingService, never()).handleBindingEvent(any());
+    }
+
+    @Test
+    @DisplayName("IOV-CCS-DSN-CR-004：occurredAt 转换不依赖 JVM 默认时区（UTC JVM 下仍按业务 ZoneId 解释）")
+    void onMessage_tboxEvent_occurredAt_usesExplicitBusinessZone() {
+        // 将 JVM 默认时区临时切换为 UTC，验证解析仍按显式业务 ZoneId（Asia/Shanghai）而非 systemDefault
+        String originalTimezone = System.getProperty("user.timezone");
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+        System.setProperty("user.timezone", "UTC");
+        try {
+            consumer.onMessage(record("HWYZTEST900000001", TBOX_EVENT_JSON));
+
+            ArgumentCaptor<VmdBindingEvent> captor = ArgumentCaptor.forClass(VmdBindingEvent.class);
+            verify(cardBindingService).handleBindingEvent(captor.capture());
+
+            VmdBindingEvent event = captor.getValue();
+            Instant occurredAtInstant = Instant.parse("2026-09-23T03:39:54Z");
+            assertEquals(LocalDateTime.ofInstant(occurredAtInstant, ZoneId.of("Asia/Shanghai")),
+                    event.getOccurredAt(), "occurredAt 必须按业务 ZoneId(Asia/Shanghai) 解释，而不是 JVM 默认时区");
+        } finally {
+            if (originalTimezone == null) {
+                System.clearProperty("user.timezone");
+            } else {
+                System.setProperty("user.timezone", originalTimezone);
+            }
+            TimeZone.setDefault(TimeZone.getDefault());
+        }
     }
 
     @Test

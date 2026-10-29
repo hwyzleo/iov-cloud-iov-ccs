@@ -3,6 +3,13 @@ mybatis-plus:
   mapper-locations: classpath*:mappers/**/*.xml
 
 iov:
+  web:
+    jackson:
+      # IOV-CCS-DSN-CR-004 / FW-WEB-DSN-CR-001：组织自有 JSON java.time 时间契约
+      # epoch-millis：保持旧毫秒输出（P1 兼容阶段，不切 ISO）；框架读端双读（ISO/10位秒/13位毫秒）
+      # zone-id：业务墙上时间 ZoneId（历史字段 DB/JDBC/业务源时区已核验为 Asia/Shanghai）
+      date-format: epoch-millis
+      zone-id: Asia/Shanghai
   kafka:
     topic-provisioning:
       enabled: true
